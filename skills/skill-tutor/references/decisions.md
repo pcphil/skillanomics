@@ -94,7 +94,7 @@ Phase transitions carry explicit messages: "Requirements confirmed: [platform], 
 
 **Counter-example:** `skill-creator-agnostic` is stateless — each invocation gathers requirements fresh, generates output, gets approval, and is done. Nothing persists because nothing needs to.
 
-**Portability note:** Memory is Claude Code-specific. On platforms without memory (Cursor, Windsurf, Copilot, Aider), alternatives:
+**Portability note:** Memory is Claude Code-specific. On platforms without it (Cursor, Windsurf, Copilot, OpenCode, Aider), alternatives:
 - **File-based state**: write progress to a file in the project (e.g., `.learning-progress.json`)
 - **Accept statelessness**: design the skill to work without persistence (assessment at every session)
 

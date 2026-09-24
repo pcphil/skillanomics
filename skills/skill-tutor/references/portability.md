@@ -47,106 +47,77 @@ What's the intent? What's platform-specific?
 
 ### Concept
 
-Understanding what each platform offers helps you identify the universal core.
+Two kinds of files exist across coding agents, and they behave differently:
 
-| Platform | Instruction Format | Trigger Mechanism | Tool Access | Context Model |
-|----------|-------------------|-------------------|-------------|---------------|
-| Claude Code | SKILL.md (markdown + YAML frontmatter) | Description matching + slash commands | Named tools (Read, Edit, Bash, etc.) | Progressive disclosure (3 levels) |
-| Cursor | `.cursor/rules/*.mdc` (MDC with frontmatter) | `globs` auto-attach + `alwaysApply` | Built-in (file ops, terminal) | Per-rule, loaded by file match or always |
-| Windsurf | `.windsurfrules` (plain markdown) | Always loaded | Built-in (Cascade tools) | Single file, always in context |
-| Copilot | `.github/copilot-instructions.md` | Always loaded | Limited (suggestion-based) | Competes with open files for context |
-| Aider | `CONVENTIONS.md` + `.aider.conf.yml` refs | Always loaded | Built-in (file ops, git) | All listed files loaded every session |
-| OpenCode | SKILL.md (same as Claude Code) | Description matching | Platform tools (names differ) | Progressive disclosure |
+- **Skills** (`SKILL.md` in a folder): the open **Agent Skills** standard (agentskills.io). Only `name` and `description` load at startup; the body loads when the skill activates; `references/`, `scripts/`, and `assets/` load on demand. Claude Code, GitHub Copilot, Cursor, Windsurf (Devin Desktop), OpenCode, and many other tools read this format.
+- **Rules / instruction files**: always-on or pattern-scoped markdown. Each tool has its own file (`.cursor/rules/*.mdc`, `.windsurf/rules/*.md`, `.github/copilot-instructions.md`, `CONVENTIONS.md`), plus the cross-tool **`AGENTS.md`** (plain markdown at the repo root, nearest file wins).
+
+*Verified against vendor docs, September 2026. Tool docs change quickly: recheck before relying on a path.*
+
+| Platform | Skills (SKILL.md) | Rules / instructions | AGENTS.md |
+|----------|-------------------|----------------------|-----------|
+| Claude Code | `.claude/skills/`, `~/.claude/skills/`, plugins | `CLAUDE.md` | Not the primary file (uses `CLAUDE.md`) |
+| GitHub Copilot | `.github/skills/`, `.claude/skills/`, `.agents/skills/` | `.github/copilot-instructions.md`; `.github/instructions/*.instructions.md` with `applyTo` globs | Yes (also reads `CLAUDE.md`, `GEMINI.md`) |
+| Cursor | `.cursor/skills/`, `.agents/skills/` (legacy `.claude/skills/`) | `.cursor/rules/*.mdc` (`description`, `globs`, `alwaysApply`) | Yes |
+| Windsurf (Devin Desktop) | `.devin/skills/`, `~/.codeium/windsurf/skills/` | `.devin/rules/*.md` or `.windsurf/rules/*.md` (`trigger:` modes) | Yes (directory-scoped) |
+| OpenCode | `.opencode/skills/`, `.claude/skills/`, `.agents/skills/` | `AGENTS.md` | Yes |
+| Aider | No skills support found in its docs | `CONVENTIONS.md` loaded via `--read` or `.aider.conf.yml` (`read:`) | Listed as supported at agents.md; confirm for your version |
 
 **Key differences:**
-- **Trigger**: Claude Code and OpenCode have description-based trigger matching; Cursor uses globs/alwaysApply; others are "always on"
-- **Progressive disclosure**: Only Claude Code and OpenCode have the 3-level loading system (SKILL.md → references/ → assets/)
-- **Tool naming**: Every platform names its tools differently — use intent-based language for portability
-- **Scope**: Cursor rules can be scoped to file patterns via `globs`; Claude Code skills can be cross-project; others are project-wide
-- **Template variables**: Only Cursor has `{{REPO_ROOT}}`, `{{CURRENT_FILE}}`, `{{SELECTION}}` — these are not universal
+- **Skills are the portable unit.** A `SKILL.md` with `name` + `description` works across the skill-capable tools above. Extra Claude Code fields (`disable-model-invocation`, `context`, `paths`, `hooks`, and others) are extensions; tools that follow the standard may reject or ignore them. claude.ai uploads accept only the standard fields.
+- **Rules are per tool.** Trigger modes differ: Cursor uses `alwaysApply`, description, or `globs`; Windsurf uses `always_on`, `model_decision`, `glob`, or `manual`; Copilot uses `applyTo`.
+- **Size guidance differs:** Claude Code and Cursor say keep files under 500 lines; Windsurf caps rule files at 12,000 characters; Copilot says instructions should be no longer than 2 pages. The Agent Skills spec recommends SKILL.md instructions under about 5,000 tokens and 500 lines.
+- **Tool naming:** every platform names its tools differently. Use intent-based language.
+- **Memory:** Claude Code memory is not a universal feature. Design a fallback.
 
 **Key similarities:**
 - All read markdown instructions
 - All can search, read, and modify files
-- All operate on a single project at a time
 - All benefit from clear, concise instructions with examples
 
 ### Exercise
 
-Pick two platforms from the table. List three things they share and three things that would need adaptation when porting a skill between them.
+Pick two platforms from the table. List three things they share and three things that would need adaptation when porting between them.
 
 ---
 
-## Lesson 1.3 — Universal Core, Platform Wrapper
+## Lesson 1.3 — Universal Core, Thin Wrapper
 
 ### Concept
 
-The pattern: **Write the brain once, wrap it per platform.**
-
-Your skill has two layers:
+Write the **core** once as a standard `SKILL.md`. Adapt only where a platform lacks skills or a feature.
 
 ```
 ┌─────────────────────────────┐
-│     Platform Wrapper         │  ← Trigger syntax, tool names, file structure
+│     Platform Adapter         │  ← Only for tools without skills (Aider) or extra features
 ├─────────────────────────────┤
-│     Universal Core           │  ← Intent, logic, examples, quality criteria
+│  SKILL.md (Agent Skills)     │  ← Intent, workflow, references/, scripts/
 └─────────────────────────────┘
 ```
 
-**Universal core contains:**
-- What the skill does (role, purpose)
-- When it should activate (situations, not syntax)
-- How to think about the problem (criteria, principles)
-- What good output looks like (examples)
-- Quality checks and edge cases
+**In the SKILL.md (portable across skill-capable tools):**
+- `name` (matches directory, lowercase, hyphens, max 64 chars) and `description` (max 1024 chars, keyword-rich, with negative triggers)
+- Workflow, rules, boundaries in intent-based language
+- `references/`, `scripts/`, `assets/` with relative paths
 
-**Platform wrapper contains:**
-- File format and frontmatter
-- Trigger/matching configuration
-- Tool-specific instructions (if needed for reliability)
-- File path conventions
-- Platform-specific features (progressive disclosure, hooks)
+**In an adapter (only when needed):**
+- An always-on rules file (`.cursor/rules/*.mdc`, `.windsurf/rules/*.md`, `CONVENTIONS.md`) that carries a short version of the core, or points to it
+- Platform features (Claude Code `allowed-tools`, hooks, memory) with a documented fallback
 
 ### Example: Code Review Skill
 
-**Universal core** (works anywhere):
-```markdown
-# Code Review
-
-## Role
-You are a code reviewer focused on correctness, security, and maintainability.
-
-## When to Activate
-When the user asks for a review, submits a PR, or requests feedback on code changes.
-
-## Review Criteria
-1. Correctness: Does it do what it claims?
-2. Security: OWASP top 10, input validation, auth checks
-3. Maintainability: Clear names, reasonable complexity, tests exist
-4. Performance: No obvious N+1, unnecessary allocations, or blocking calls
-
-## Output Format
-- Summary (1-2 sentences)
-- Issues (severity + location + suggestion)
-- Strengths (what's done well)
-```
-
-**Claude Code wrapper** (SKILL.md additions):
+**Core** (`skills/code-review/SKILL.md`, works in every skill-capable tool):
 ```yaml
 ---
 name: code-review
-description: Reviews code for correctness, security, and maintainability. Triggers on /review or when user asks for code feedback.
+description: Reviews code for correctness, security, and maintainability. Use when the user asks for a review or feedback on changes. Does NOT activate for writing new code.
 ---
 ```
-Plus: references/ for detailed checklists, progressive disclosure.
+Body: review criteria, output format (summary, issues, strengths), references for detailed checklists.
 
-**Cursor wrapper** (.cursorrules addition):
-```markdown
-## Code Review Mode
-When I ask you to review code, follow these criteria: [paste universal core]
-```
+**Adapter for Aider** (no skills): a `CONVENTIONS.md` with the criteria condensed to a short list, loaded with `--read`.
 
-Same brain, different packaging.
+Same brain, near-identical packaging where the standard is supported.
 
 ---
 
@@ -154,27 +125,22 @@ Same brain, different packaging.
 
 ### Concept
 
-Here's a translation table for porting skills:
-
-| Claude Code | Cursor | Windsurf | Copilot | Aider | OpenCode | Universal Term |
-|-------------|--------|----------|---------|-------|---------|----------------|
-| SKILL.md | `.cursor/rules/*.mdc` | `.windsurfrules` | `copilot-instructions.md` | `CONVENTIONS.md` | SKILL.md | Instruction file |
-| `name` frontmatter | (N/A) | (N/A) | (N/A) | (N/A) | `name` frontmatter | Identity |
-| `description` frontmatter | `description` frontmatter | (N/A) | (N/A) | (N/A) | `description` frontmatter | Trigger text |
-| `globs`: N/A | `globs` in frontmatter | N/A | N/A | N/A | N/A | File-scoped activation |
-| references/ | @-file references | (inline) | (inline) | `.aider.conf.yml` refs | references/ | Extended knowledge |
-| scripts/ | (terminal) | (terminal) | (limited) | (terminal) | scripts/ | Deterministic actions |
-| Progressive disclosure | (not available) | (not available) | (not available) | (not available) | Progressive disclosure | Context management |
-| Memory system | (not available) | (not available) | (not available) | (not available) | Verify availability | State persistence |
+| Concept | SKILL.md tools (Claude Code, Copilot, Cursor, Windsurf, OpenCode) | Rules-only files (Aider; Cursor/Windsurf/Copilot rule files) |
+|---------|-------------------------------------------------------------------|---------------------------------------------------------------|
+| Identity | `name` frontmatter | File name |
+| Trigger text | `description` frontmatter | Rule-specific: `description` + `alwaysApply` (Cursor), `trigger:` (Windsurf), `applyTo` (Copilot), none (Aider) |
+| File-scoped activation | `paths` (Claude Code, Cursor extensions) | `globs` (Cursor), `glob` trigger (Windsurf), `applyTo` (Copilot) |
+| Extended knowledge | `references/` loaded on demand | Inline, or extra files loaded with `--read` (Aider) |
+| Deterministic actions | `scripts/` | Terminal commands |
+| Context management | Progressive disclosure (metadata, body, resources) | Keep the file short: it loads every time it applies |
+| State persistence | Memory (Claude Code only); fallback below | File-based state or statelessness |
 
 **Handling missing capabilities:**
-
-When porting to a platform that lacks a feature:
-- **No progressive disclosure** (Cursor, Windsurf, Copilot, Aider) → Keep instructions concise; inline the most critical content
-- **No trigger matching** (Windsurf, Copilot, Aider) → The skill is always active; add "When to activate" section so the agent self-filters
-- **No template variables** (Claude Code, Windsurf, Copilot, Aider, OpenCode) → Use relative paths or intent-based references instead of `{{REPO_ROOT}}`
-- **No memory** (all except Claude Code) → Rely on file-based state or accept statelessness
-- **Limited tools** → Express intent and let the agent use what it has
+- **No skills support** (Aider) → Put a condensed core in the conventions file; keep it short.
+- **Always-on rule files** → Add a "When to activate" section so the agent self-filters.
+- **No memory** (everything except Claude Code) → Write progress to a small project file (for example `.inspiration-state.md`, git-ignored) or accept statelessness.
+- **Extension fields rejected** (claude.ai uploads, strict Agent Skills validators) → Keep to the six standard fields (`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`) for distributable skills.
+- **Limited tools** → Express intent and let the agent use what it has.
 
 ---
 

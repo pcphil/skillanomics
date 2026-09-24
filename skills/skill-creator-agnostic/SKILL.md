@@ -1,9 +1,9 @@
 ---
 name: skill-creator-agnostic
-description: Creates AI agent skills and rules for any coding agent platform. Detects or asks for target platform (Claude Code, Cursor, Aider, Windsurf, Copilot), then generates output in the correct native format — not a lowest-common-denominator compromise. Does not activate for general coding questions, debugging, or questions about how an existing skill works.
+description: Creates AI agent skills and rules for any coding agent platform. Defaults to the Agent Skills standard (SKILL.md, read by Claude Code, Copilot, Cursor, Windsurf, OpenCode); generates native rules files (Cursor .mdc, Windsurf rules, Copilot instructions, Aider CONVENTIONS.md) when the user wants always-on rules or targets a tool without skills. Does not activate for general coding questions, debugging, or questions about how an existing skill works.
 ---
 
-When creating skills: reason as a skill/rule authoring specialist. Generate platform-native skill files that use each platform's actual features — not a blended middle-ground format.
+When creating skills: reason as a skill/rule authoring specialist. Generate a standard SKILL.md by default, and platform-native rules files where the target needs them.
 
 **Required before generating:** negative triggers must be defined. Ask if missing.
 These rules govern skill file generation only. Follow CLAUDE.md and system prompt for all other output.
@@ -11,7 +11,7 @@ These rules govern skill file generation only. Follow CLAUDE.md and system promp
 ## On Invoke
 
 1. Extract skill requirements from user description. Consult with the user to clarify any vague or incomplete requirements. Generate only once all requirements are clear.
-2. Detect target platform from context (see Detection), but ask user which platform they want to target.
+2. Detect target platform from context (see Detection), but ask which platform and which output they want: a SKILL.md skill (default) or a rules file.
 3. If unclear or multi-platform: ask before generating.
 4. Load the relevant platform reference from `references/`.
 5. Generate output in that platform's native format.
@@ -35,20 +35,22 @@ Detect from project context before asking:
 
 | Signal | Platform |
 |--------|----------|
-| `CLAUDE.md` present, or user mentions Claude Code | Claude Code |
-| `opencode.json` present, or user mentions OpenCode | OpenCode |
-| `.cursor/rules/` or `.cursorrules` present | Cursor |
-| `CONVENTIONS.md` or user mentions Aider | Aider |
-| `.windsurfrules` present | Windsurf |
-| `.github/copilot-instructions.md` present | Copilot |
+| `CLAUDE.md` or `.claude/` present, or user mentions Claude Code | Claude Code |
+| `opencode.json` or `.opencode/` present, or user mentions OpenCode | OpenCode |
+| `.cursor/` present | Cursor |
+| `CONVENTIONS.md` or `.aider.conf.yml` present, or user mentions Aider | Aider |
+| `.devin/` or `.windsurf/` present (or legacy `.windsurfrules`) | Windsurf |
+| `.github/copilot-instructions.md`, `.github/instructions/`, or `.github/skills/` present | Copilot |
+| `AGENTS.md` only | Ask which tool reads it |
 
-If ambiguous: ask. If multi-platform requested: generate each as a separate file, clearly labeled.
+If ambiguous: ask. If several skill-capable tools are requested: generate one SKILL.md and list the install paths per tool. Generate separate files only for rules-file targets.
 
 ## Platform References
 
 Load the target reference before generating. Follow its format exactly.
 
-- Claude Code → `references/claude-code.md`
+- Any SKILL.md target → `references/agent-skills.md` (always load first for skills)
+- Claude Code extensions → `references/claude-code.md`
 - OpenCode → `references/opencode.md`
 - Cursor → `references/cursor.md`
 - Aider → `references/aider.md`
@@ -59,7 +61,7 @@ Asset templates (blank boilerplate to copy) live in `assets/`.
 
 ## Output Rules
 
-- One platform = one file. Multi-platform = one file per platform.
+- One SKILL.md serves every skill-capable tool. Rules-file targets get one file per platform.
 - Use intent-based language ("search the codebase", not tool names like "use Grep").
 - Name the output file per platform conventions (see each reference).
 - Structure the body: most critical constraint in first 5 lines AND restated at end.
@@ -84,7 +86,7 @@ Asset templates (blank boilerplate to copy) live in `assets/`.
 
 ## Blocking Conditions
 
-- Platform unclear after detection: "I need the target platform. Which one: Claude Code, Cursor, Aider, Windsurf, Copilot, OpenCode?"
+- Platform unclear after detection: "I need the target platform. Which one: Claude Code, Cursor, Aider, Windsurf, Copilot, OpenCode? And should I produce a SKILL.md skill or a rules file?"
 - Requirements too vague: "These requirements are too broad for a focused skill. I need: [list missing items]."
 - User's stated premise seems off: name the discrepancy and ask before proceeding.
 
@@ -117,6 +119,11 @@ Run this review before presenting the generated skill. Fix any failures first.
 
 **Security**
 - [ ] Skill does not request capabilities beyond its core function
+
+**Agent Skills standard (SKILL.md output)**
+- [ ] `name` is lowercase-hyphen, at most 64 chars, and matches the directory
+- [ ] `description` is at most 1024 chars and states what it does and when to use it
+- [ ] Only the six standard fields unless the user targets a single platform's extensions
 
 Full discipline reference: `../../skill-design-considerations/`
 

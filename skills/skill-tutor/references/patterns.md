@@ -12,7 +12,7 @@ A living reference of skill design patterns. Each pattern addresses a recurring 
 
 **Solution:** Separate your skill into two layers: a universal core (intent, logic, criteria, examples) and a thin platform wrapper (file format, trigger config, tool-specific syntax). Write the core first, then wrap it for each target platform.
 
-**Example:** A code review skill with shared criteria (correctness, security, maintainability) wrapped in SKILL.md for Claude Code and .cursorrules for Cursor.
+**Example:** A code review skill with shared criteria (correctness, security, maintainability) written once as a SKILL.md (read by Claude Code, Copilot, Cursor, Windsurf, and OpenCode), with a condensed CONVENTIONS.md for Aider.
 
 **Portability:** This IS the portability pattern — it's the foundation for all others.
 
@@ -65,7 +65,7 @@ A living reference of skill design patterns. Each pattern addresses a recurring 
   * Another specialized skill (testing, deployment) is clearly more appropriate
 ```
 
-**Portability:** High — every platform benefits from clear activation scope. On platforms without trigger matching (Cursor, Windsurf), the agent uses this for self-filtering.
+**Portability:** High — every platform benefits from clear activation scope. In always-on rule files (Cursor `alwaysApply`, Windsurf `always_on`, Aider conventions), the agent uses this for self-filtering.
 
 ---
 

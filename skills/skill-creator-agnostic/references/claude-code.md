@@ -9,7 +9,7 @@ skill-name/
 └── assets/           # Templates/boilerplate — not loaded into context
 ```
 
-Install: symlink `skill-name/` into `~/.agents/skills/skill-name`
+Install: place `skill-name/` under `.claude/skills/` (project) or `~/.claude/skills/` (personal). `.agents/skills/` is also widely read. Layout and standard fields: `references/agent-skills.md`.
 
 ## Frontmatter
 
@@ -22,7 +22,7 @@ description: >
 ---
 ```
 
-**Only `name` and `description` are standard fields.** Do not add `globs`, `tags`, or platform-specific fields.
+**`name` and `description` are the portable core.** Claude Code accepts extra fields (`when_to_use`, `disable-model-invocation`, `user-invocable`, `allowed-tools`, `context`, `paths`, `hooks`, `model`, `effort`, and more), but other tools and claude.ai uploads accept only the six standard fields (`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`). Add extensions only when the skill needs them and the user targets Claude Code.
 
 ## Body Format
 
@@ -67,7 +67,7 @@ On resume: read memory → summarize where they left off → ask continue or res
 
 ## Size Constraint
 
-Keep SKILL.md under 500 lines. Move heavy content to `references/`. Reference it explicitly:
+Keep SKILL.md under 500 lines. Combined `description` + `when_to_use` is capped at 1,536 characters. Move heavy content to `references/`. Reference it explicitly:
 
 ```markdown
 Full spec: `references/detail.md`

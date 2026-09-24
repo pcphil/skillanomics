@@ -1,3 +1,7 @@
+---
+trigger: model_decision
+description: One sentence. Shown to the model to decide when to load this rule.
+---
 # [Project Name] Rules
 
 ## Role & Objective
@@ -20,14 +24,10 @@ You are [persona]. Your primary goal is [objective].
 
 - [Positive constraint 1]
 - [Positive constraint 2]
-- [Positive constraint 3]
-
-## Never
-
-- [Hard prohibition 1]
-- [Hard prohibition 2]
 
 ## Out of Scope
 
 - [What this rule does NOT cover — prevents Cascade drift]
-- Do not modify `[path]` — [reason].
+- Leave `[path]` untouched — [reason].
+
+<!-- Save as .devin/rules/<name>.md or .windsurf/rules/<name>.md. Keep under 12,000 characters. -->

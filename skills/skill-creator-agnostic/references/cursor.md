@@ -1,11 +1,12 @@
-# Cursor Skill Format
+# Cursor Format
 
-## File Location
+**Prefer a SKILL.md skill** (`.cursor/skills/<name>/` or `.agents/skills/<name>/`; format in `references/agent-skills.md`). Cursor applies skills when the agent finds them relevant, and `disable-model-invocation: true` makes one behave like a slash command. Use a rules file (below) for always-on or file-scoped guidance.
 
-**New format (MDC):** `.cursor/rules/skill-name.mdc`
-**Legacy:** `.cursorrules` (root, plain markdown, no frontmatter)
+## Rules File Location
 
-Prefer MDC — it supports per-file scoping via `globs`.
+`.cursor/rules/skill-name.mdc`. Plain `.md` files in that folder are ignored. `AGENTS.md` at the repo root (or in subdirectories) is a frontmatter-free alternative.
+
+MDC supports per-file scoping via `globs`.
 
 ## Frontmatter (MDC only)
 
@@ -20,15 +21,16 @@ alwaysApply: false                      # true = always in context, false = on-d
 **`globs`** — Cursor auto-attaches rules matching open files. Omit if skill should only activate manually.
 **`alwaysApply: true`** — loads into every chat. Use sparingly — burns context on every request.
 
-## Context Variables
+## Rule Types
 
-Available in rule body — Cursor resolves these at runtime:
+| Type | Trigger |
+|------|---------|
+| Always Apply | Every chat session (`alwaysApply: true`) |
+| Apply Intelligently | Agent reads `description` and decides |
+| Apply to Specific Files | `globs` match |
+| Apply Manually | `@`-mention in chat |
 
-| Variable | Value |
-|----------|-------|
-| `{{REPO_ROOT}}` | Absolute path to project root |
-| `{{CURRENT_FILE}}` | Path of the currently active file |
-| `{{SELECTION}}` | Currently selected text in editor |
+Context variables such as `{{REPO_ROOT}}` do not appear in current Cursor docs; use relative paths instead.
 
 ## Body Format
 
@@ -65,7 +67,7 @@ Recommended structure:
 
 ## Negative Triggers
 
-Always include a "Do NOT activate when" section. This is the primary token-saving mechanism in Cursor — rules that fire when they shouldn't bloat every prompt.
+Include a "Do NOT activate when" section. Keep each rule under 500 lines and split large rulesets. This is the primary token-saving mechanism in Cursor — rules that fire when they shouldn't bloat every prompt.
 
 ## Template
 
