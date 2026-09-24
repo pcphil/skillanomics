@@ -12,7 +12,7 @@ read:
   - docs/architecture.md
 ```
 
-Files in `read:` are loaded into every session as read-only context. Keep them focused — Aider has no lazy loading.
+Files in `read:` (or `aider --read CONVENTIONS.md`) are loaded read-only and cached when prompt caching is on. Keep them focused — Aider's docs show no lazy loading, and no skills (SKILL.md) support was found. `agents.md` lists Aider among tools that read `AGENTS.md`; confirm for your version.
 
 ## Format
 
@@ -64,7 +64,7 @@ Aider is deeply git-integrated. Include:
 
 ## Size
 
-No hard limit, but Aider loads the full file on every prompt. Keep under 200 lines. Move detail to separate files and reference them via `.aider.conf.yml`.
+Aider documents no size limit, but the full file loads every session. Keep it lean (about 100 lines). Move detail to separate files and reference them via `.aider.conf.yml`.
 
 ## Template
 

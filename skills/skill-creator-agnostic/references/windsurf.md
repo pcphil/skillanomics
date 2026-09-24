@@ -1,26 +1,34 @@
-# Windsurf Rule Format
+# Windsurf (Devin Desktop) Format
 
-## File Location
+**Prefer a SKILL.md skill** for multi-step work with supporting files (`.devin/skills/<name>/`; format in `references/agent-skills.md`). Invoke automatically by description or with `@skill-name`. Use a rules file for short behavioral guidance.
 
-**Global rules:** `.windsurfrules` in project root
-**Workspace rules:** Configured via Windsurf settings UI
+## Rules File Location
 
-Windsurf loads `.windsurfrules` automatically for every session in the project.
+- Workspace rules: `.devin/rules/*.md` (preferred) or `.windsurf/rules/*.md`
+- Global rules: `~/.codeium/windsurf/memories/global_rules.md`
+- `AGENTS.md` in any workspace directory (no frontmatter, always on)
+- Legacy: `.windsurfrules` in the project root (older format; not covered by current docs)
 
 ## Format
 
-Plain markdown. No frontmatter. No special context variables (unlike Cursor).
+Markdown with optional frontmatter in workspace rules:
 
-Windsurf's Cascade model reads rules as persistent system-level context. Write instructions in second person, present tense — "You are...", "Always...", "Never...".
+```yaml
+---
+trigger: model_decision        # always_on | model_decision | glob | manual
+description: Shown to the model when deciding relevance (model_decision)
+globs: "src/**/*.ts"           # for trigger: glob
+---
+```
 
-## Cascade Context
+| Trigger | Behavior |
+|---------|----------|
+| `always_on` | Full content in the system prompt every message |
+| `model_decision` | Description shown; full content loaded when relevant |
+| `glob` | Applied when matching files are accessed |
+| `manual` | Activated by `@rule-name` |
 
-Windsurf's Cascade applies rules hierarchically:
-- Global user rules (settings) → applied first
-- Project `.windsurfrules` → layered on top
-- In-chat instructions → override for that session only
-
-Write `.windsurfrules` assuming global user rules may already set baseline behavior. Don't repeat universal instructions (e.g., "write clean code") — focus on project-specific constraints.
+Global rules and root `AGENTS.md` have no frontmatter and are always on. Write instructions in second person, present tense.
 
 ## Recommended Structure
 
@@ -33,20 +41,13 @@ You are [persona]. Your primary goal is [objective].
 ## Stack
 - Language: [e.g., TypeScript 5.x]
 - Framework: [e.g., Next.js 15 App Router]
-- Key dependencies: [list pinned versions]
 
 ## Workflow
 1. [Step 1]
 2. [Step 2]
-3. [Step 3]
 
 ## Always
-- [Positive constraint 1]
-- [Positive constraint 2]
-
-## Never
-- [Hard prohibition 1]
-- [Hard prohibition 2]
+- [Positive constraint]
 
 ## Out of Scope
 [What this rule does NOT cover — prevents drift]
@@ -54,17 +55,17 @@ You are [persona]. Your primary goal is [objective].
 
 ## Negative Triggers
 
-No auto-attachment by file type (no globs). Windsurf applies `.windsurfrules` to all sessions. Use "Out of Scope" section to bound behavior:
+Use `trigger: glob` or `model_decision` to bound when a rule loads, and an "Out of Scope" section to bound behavior:
 
 ```markdown
 ## Out of Scope
-- Do not generate backend code — this project is frontend only.
-- Do not modify files in `src/generated/` — auto-generated, do not edit.
+- Backend code: this project is frontend only.
+- Files in `src/generated/`: auto-generated.
 ```
 
 ## Size
 
-Windsurf loads full file every session. Keep under 150 lines. Shorter = more reliable instruction-following.
+Workspace rule files are limited to 12,000 characters each, and global rules to 6,000. Shorter files follow instructions more reliably.
 
 ## Template
 

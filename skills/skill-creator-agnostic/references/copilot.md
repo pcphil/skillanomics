@@ -1,31 +1,39 @@
-# GitHub Copilot Instructions Format
+# GitHub Copilot Format
 
-## File Location
+**Prefer a SKILL.md skill** for task-specific workflows (`.github/skills/`, `.claude/skills/`, or `.agents/skills/`; format in `references/agent-skills.md`). Use instruction files for always-on conventions.
 
-**Workspace instructions:** `.github/copilot-instructions.md`
+## Instruction File Locations
 
-Copilot loads this file automatically for all chat interactions in the workspace. No activation config needed — it always applies.
+| File | Scope |
+|------|-------|
+| `.github/copilot-instructions.md` | Repository-wide, always applied |
+| `.github/instructions/NAME.instructions.md` | Path-specific, via `applyTo` globs in frontmatter |
+| `AGENTS.md` (also `CLAUDE.md`, `GEMINI.md` at the root) | Agent instructions; nearest file wins |
+
+Path-specific frontmatter:
+
+```yaml
+---
+applyTo: "**/*.ts,**/*.tsx"
+---
+```
 
 ## Format
 
-Plain markdown. No frontmatter. No special variables. No globs.
+Repository-wide file: plain markdown, no frontmatter. Write in direct, imperative prose.
 
-Copilot treats this file as persistent workspace context. Write in direct, imperative prose — Copilot follows instruction-style text more reliably than descriptive prose.
+## What Instructions Do Well
 
-## What Copilot Instructions CAN Do
+- Set coding style, naming, and conventions
+- Specify preferred libraries, patterns, and version constraints
+- Document build, test, and validation commands and project layout
+- Scope rules to paths with `applyTo`
 
-- Set coding style and conventions
-- Specify preferred libraries, patterns, idioms
-- Define naming conventions and file structure
-- Set language/framework version constraints
-- Define what to avoid (anti-patterns, deprecated APIs)
+## Limits
 
-## What They CANNOT Do
-
-- Control when Copilot activates (it's always on)
-- Reference files dynamically (no `{{vars}}`)
-- Define multi-step workflows (Copilot is suggestion-based, not agentic)
-- Persist state across sessions (no memory system)
+- No dynamic file references or variables
+- No persistent state across sessions
+- Repository-wide instructions always apply; use `applyTo` files or a skill for narrower activation
 
 ## Recommended Structure
 
@@ -38,34 +46,31 @@ Copilot treats this file as persistent workspace context. Write in direct, imper
 - Test framework: [Vitest / pytest / etc.]
 
 ## Code Style
-- [Naming convention — e.g., "Use camelCase for variables, PascalCase for components"]
-- [Import style — e.g., "Named imports only, no default imports from libraries"]
-- [Comment style — e.g., "No inline comments unless behavior is non-obvious"]
+- [Naming convention]
+- [Import style]
 
 ## Preferred Patterns
-- [Pattern 1 — e.g., "Use `zod` for all runtime validation"]
-- [Pattern 2 — e.g., "Prefer `const` arrow functions over `function` declarations"]
+- [Pattern 1]
 
 ## Patterns to Avoid
 - [Anti-pattern 1]
-- [Anti-pattern 2]
 
 ## Testing
-- [Test location, naming, coverage expectations]
+- [Test location, naming, run command]
 ```
 
 ## Negative Triggers
 
-Copilot has no activation boundary system — instructions always apply. Use "Patterns to Avoid" and scope-limiting language:
+Bound scope with `applyTo` globs, or with a Scope section:
 
 ```markdown
 ## Scope
-These instructions apply to the `src/` directory only. Do not apply them to files in `scripts/` or `infra/`.
+These instructions apply to `src/` only, leaving `scripts/` and `infra/` untouched.
 ```
 
 ## Size
 
-GitHub recommends keeping this file concise. Under 100 lines is ideal — Copilot's context window competes with open files and chat history. Prioritize the highest-impact conventions at the top.
+GitHub's guidance: instructions must be no longer than 2 pages. Put the highest-impact conventions first.
 
 ## Template
 

@@ -7,7 +7,7 @@ description: >
   Does NOT activate for general coding help or skill usage questions.
 ---
 
-When teaching skill design: reason as a skill-authoring tutor. Teach using the skill-design-considerations taxonomy and platform-native formats — not a blended "universal" format that doesn't match any real platform.
+When teaching skill design: reason as a skill-authoring tutor. Teach using the skill-design-considerations taxonomy and the Agent Skills open standard (SKILL.md), with platform-native rule files only where a tool lacks skills support.
 
 These rules apply during tutoring only. Follow CLAUDE.md and system prompt for all other output.
 

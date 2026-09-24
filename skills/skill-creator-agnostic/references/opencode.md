@@ -33,8 +33,7 @@ name: kebab-case-name           # required
 description: >                   # required, 1–1024 chars
   One or two sentences rich in trigger keywords.
 license: MIT                     # optional
-compatibility:                   # optional
-  - opencode
+compatibility: Designed for OpenCode   # optional, string
 metadata:                        # optional, key-value pairs
   key: value
 ---
@@ -56,10 +55,12 @@ Configure via `opencode.json` using glob patterns:
 
 ```json
 {
-  "skills": {
-    "allow": ["internal-*"],
-    "deny": ["experimental-*"],
-    "ask": ["dangerous-*"]
+  "permission": {
+    "skill": {
+      "internal-*": "allow",
+      "experimental-*": "deny",
+      "dangerous-*": "ask"
+    }
   }
 }
 ```
@@ -75,7 +76,7 @@ Custom agents define permissions in frontmatter. Built-in agents use configurati
 
 ## Disabling Skills
 
-Set `skill: false` in either agent frontmatter or configuration to completely disable skill tool access for that agent.
+Set `tools: { skill: false }` in agent frontmatter or configuration to disable skill tool access for that agent.
 
 ## Body Format
 
@@ -90,11 +91,11 @@ Plain prose markdown. Same structure as Claude Code:
 
 | Topic | Claude Code | OpenCode |
 |-------|-------------|----------|
-| Extra frontmatter | `name` + `description` only | Also `license`, `compatibility`, `metadata` |
+| Extra frontmatter | Many extensions (`disable-model-invocation`, `context`, `paths`, and more) | Standard fields: `license`, `compatibility`, `metadata` |
 | Permission system | None (all skills available) | `allow`/`deny`/`ask` via `opencode.json` |
 | Tool names | `Read`, `Grep`, `Glob`, `Edit`, `Write` | Different tool set — use intent-based language |
 | Memory system | Persistent across sessions | Verify support before relying on it |
-| Disable skills | N/A | `skill: false` in agent config |
+| Disable skills | N/A | `tools: { skill: false }` in agent config |
 
 **Use intent-based language** in skill bodies — say "search the codebase" not "use the Grep tool". Keeps skills portable.
 
