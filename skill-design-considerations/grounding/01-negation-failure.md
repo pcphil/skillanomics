@@ -2,20 +2,21 @@
 
 ## What it is
 
-LLMs follow instructions phrased as prohibitions ("don't do X", "never do Y", "avoid Z") significantly less reliably than instructions phrased as positive actions ("do A instead", "always do B", "use C"). When a skill relies heavily on negative instructions to constrain behavior, the model tends to violate those constraints — especially under ambiguous conditions or when the instruction is far from the point of action.
+Instructions phrased as prohibitions ("don't do X", "never do Y", "avoid Z") are less dependable than instructions phrased as positive actions ("do A instead", "always do B", "use C"). Current models follow simple, clearly stated prohibitions well; the gap shows up when a skill relies heavily on negatives, when conditions are ambiguous, or when the prohibition sits far from the point of action. Vendor prompting guidance (e.g. Anthropic's) still recommends telling the model what to do rather than what not to do.
 
 ## Why it happens
 
-Language models are trained primarily on text that describes what things ARE and what actions TO take, not on text that describes what NOT to do. Negation requires holding a concept in mind and then suppressing a response to it — a more complex cognitive operation that training does not reinforce as strongly.
-
-Additionally:
-- Negative instructions require the model to first generate (or consider) the prohibited action before suppressing it. Under pressure to complete a task, the suppression step gets skipped.
+Two causes are direct and observable:
 - "Don't do X" leaves the correct action undefined. The model fills the gap with its default behavior, which may be exactly X.
-- In long contexts, "don't do X" stated once early is forgotten by the time the model reaches the decision point. A positive instruction ("do Y") at the decision point is more effective.
+- In long contexts, "don't do X" stated once early is followed less reliably by the time the model reaches the decision point. A positive instruction ("do Y") at the decision point is more effective.
+
+Two further explanations are working hypotheses, not established mechanisms:
+- Training text mostly describes what to do, so positive instructions map onto more familiar patterns.
+- A prohibition puts the forbidden action into context, which may make it more salient rather than less.
 
 ## Analogy
 
-Tell yourself "don't think about a pink elephant." You just thought about one. Now try "picture a blue square" — that works immediately. The brain latches onto the concrete concept in the instruction. Negative instructions hand the model a vivid image of the forbidden action right before asking it not to do it. Positive instructions hand it the action to take instead.
+Tell yourself "don't think about a pink elephant." You just thought about one. Now try "picture a blue square" — that works immediately. The brain latches onto the concrete concept in the instruction. Negative instructions likely work the same way on a model — they put the forbidden action in front of it right before asking it not to act on it. Positive instructions hand it the action to take instead.
 
 ## Symptoms
 
@@ -23,13 +24,13 @@ Tell yourself "don't think about a pink elephant." You just thought about one. N
 - Skill says "never activate for conceptual questions" — model activates for conceptual questions
 - "Don't blend platform formats" — model blends formats anyway when user's request is ambiguous
 - Model follows positive rules in a skill reliably but violates the negative ones
-- Adding "NEVER" or "ABSOLUTELY DO NOT" in caps temporarily fixes the issue but fails again as context grows
+- "NEVER" or "ABSOLUTELY DO NOT" in caps gets added to force compliance — on recent Claude models (per Anthropic's prompting guidance) this tends to overcorrect, applying the rule too broadly (e.g. refusing adjacent, legitimate actions). Calm, specific phrasing with the reason attached works better than volume
 
 ## Fix
 
 **Reframe every negative as a positive:**
 
-| Negative (unreliable) | Positive (reliable) |
+| Negative (weaker) | Positive (stronger) |
 |-----------------------|---------------------|
 | Don't generate without confirmation | Ask for confirmation before generating |
 | Never blend platform formats | Generate one file per platform, clearly labeled |
