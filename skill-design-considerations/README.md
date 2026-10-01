@@ -15,7 +15,7 @@ How models allocate focus. Critical instructions get ignored not because they're
 | [Lost in the Middle](attention/01-lost-in-the-middle.md) | Rules buried mid-file or mid-list get less attention than rules at the edges |
 | [Over-Specification](attention/02-over-specification.md) | Too many rules → model satisfies few reliably |
 | [Context Bloat](attention/03-context-bloat.md) | Loading too much at once crowds out the instructions that matter |
-| [Instruction Hierarchy Blindness](attention/04-instruction-hierarchy-blindness.md) | Skill doesn't account for precedence: system prompt > CLAUDE.md > skill > user |
+| [Instruction Hierarchy Blindness](attention/04-instruction-hierarchy-blindness.md) | Skill doesn't account for where it sits among system prompt, CLAUDE.md, other skills, and user messages — and often loses conflicts |
 | [Stale Reference Loading](attention/05-stale-reference-loading.md) | Multi-phase skill loads wrong or outdated reference for the current step |
 
 ---
@@ -26,7 +26,7 @@ Keeping the model tethered to skill instructions as conversations evolve and pre
 
 | File | Problem |
 |------|---------|
-| [Negation Failure](grounding/01-negation-failure.md) | "Don't do X" is unreliable — positive framing works; negation doesn't |
+| [Negation Failure](grounding/01-negation-failure.md) | "Don't do X" leaves the right action undefined — positive framing is more reliable |
 | [State Leakage](grounding/02-state-leakage.md) | Skill keeps influencing behavior after its task ends — including persona capture |
 | [Instruction Conflict](grounding/03-instruction-conflict.md) | Skill instructions clash with system prompt, CLAUDE.md, or user messages |
 | [Conversational Drift](grounding/04-conversational-drift.md) | Recent conversation gradually overrides skill instructions |
