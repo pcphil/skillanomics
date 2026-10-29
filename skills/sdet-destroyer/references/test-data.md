@@ -184,6 +184,7 @@ Pin image tags to the version production runs.
 - **Reference data** (countries, plans, feature flags) — seed once per session via migrations or a seed script; read-only in tests.
 - **Entity data** (users, orders) — per test, via factories and fixtures.
 - **Staging** — never depend on data created by hand; create and clean up through the API.
+- **Vendor sandbox** — shared with other teams: prefix every created record with the run ID and sweep leftovers nightly (`references/vendor-apps.md` §9).
 - **Production** — read-only smoke only: read pre-existing, known-stable records (IDs supplied through env vars). Create nothing.
 
 ## 5. Environments

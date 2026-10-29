@@ -8,7 +8,8 @@ description: >
   environments, framework scaffolding, and GitHub Actions CI. Extends an existing
   test suite or scaffolds a new one. Triggers on "SDET", "write tests", "add tests",
   "API tests", "e2e tests", "test framework", "test automation", "test plan",
-  "test strategy", "load test", "performance test", "add tests to CI".
+  "test strategy", "load test", "performance test", "add tests to CI",
+  "test a vendor app", "test from a Swagger spec".
   Does NOT activate for: debugging a single failing or flaky test, learning a
   testing tool step by step, browser automation that is not testing (scraping,
   form-filling bots), writing feature code, or mobile app testing.
@@ -35,12 +36,13 @@ Start every response with the active phase label: `[SDET: <Phase>]` — one of `
 Gather facts before any decision. This phase writes no files.
 
 1. Detect the stack: look for `pyproject.toml` / `requirements*.txt` / `setup.cfg` (Python) and `package.json` / `tsconfig.json` (JS/TS). A repo can be both — note which part is which.
-2. Detect the existing test setup: test directories, runner config (`pytest.ini`, `pyproject.toml`, `setup.cfg`, `tox.ini`, `conftest.py`, `playwright.config.*`, `vitest.config.*`), existing fixtures (`pytest --fixtures`), env files and their loaders, dependency tool, and representative existing tests. Note their style: naming, fixtures, folder layout, assertion style.
+2. Detect the existing test setup: test directories, runner config (`pytest.ini`, `pyproject.toml`, `setup.cfg`, `tox.ini`, `conftest.py`, `playwright.config.*`, `vitest.config.*`), existing fixtures (`pytest --fixtures`), env files and their loaders, dependency tool, task runners (Makefile, justfile, `package.json` scripts, tox, nox), other test folders and frameworks (`test/`, `__tests__/`, `e2e/`, Cypress, Jest), and representative existing tests. Note their style: naming, fixtures, folder layout, assertion style.
 3. Read `tests/TESTING.md` if present — it holds this project's agreed strategy and conventions. Follow it over any default in this skill.
 4. Detect CI: files under `.github/workflows/`.
 5. Detect environments: how the app runs locally (scripts, `docker-compose*`, `Makefile`), base URLs and env var names in config or `.env.example`.
 6. Check whether a browser-control tool is available in this agent environment (for example, Playwright MCP).
-7. Output a short **Assess summary**: stack(s), existing framework (yes/no + runner), conventions to follow, CI present, environments found, browser tool (yes/no), and gaps. When no browser tool is found, add one line: "No browser-control tool detected; with one (e.g. Playwright MCP), selector discovery and API capture can run against the live app."
+7. Detect **vendor mode**: no application source in the repo while the target is a running app, or the user names a vendor product. If so, load `references/vendor-apps.md` and follow it alongside this workflow.
+8. Output a short **Assess summary**: stack(s), existing framework (yes/no + runner), conventions to follow, CI present, environments found, browser tool (yes/no), vendor mode (`Vendor mode: <product>, <hosted | self-hosted>` or no), and gaps. When no browser tool is found, add one line: "No browser-control tool detected; with one (e.g. Playwright MCP), selector discovery and API capture can run against the live app."
 
 Then decide the route:
 
@@ -61,9 +63,9 @@ After sign-off on a full pipeline, write the agreed strategy and conventions to 
 
 Only when Assess found no framework. Load `references/architecture.md`.
 
-1. Decide the location: `tests/` inside the app repo by default; a standalone test repo when Assess found several services or the user asks. A standalone repo defaults to Python — confirm with the user.
-2. Create the layout, runner config, typed settings (`TEST_`-prefixed env files inside `tests/`, role registry, fail-fast on missing values), API client layer, role-based auth fixtures, page-object fixtures (if UI is in scope), marker/tag scheme, and reporting for the stack. In an existing repo, follow the coexistence rules in `references/architecture.md`: merge shared files with an approved diff, keep existing tests and tooling in place, and scope stricter pytest options to the new tests.
-3. List every dependency to add and ask the user before installing anything.
+1. Decide the location: `tests/` inside the app repo by default; a standalone test repo when Assess found several services, in vendor mode, or when the user asks. A standalone repo defaults to Python — confirm with the user.
+2. Create the layout, runner config, typed settings (`TEST_`-prefixed env files inside `tests/`, role registry, fail-fast on missing values), API client layer, role-based auth fixtures, page-object fixtures (if UI is in scope), marker/tag scheme, and reporting for the stack. In an existing repo, follow the coexistence rules in `references/architecture.md` §2: keep runner configs, auth state, and reports inside `tests/`; show the **footprint preview** (every root file touched, marked new or added-to, with diffs) and wait for one approval before writing; keep existing tests and tooling in place; scope stricter pytest options to the new tests.
+3. List every dependency to add and ask the user before installing anything. In the same question, offer type checking for the test support layer (default no; `references/architecture.md` §5).
 4. Ship one working example test per layer in scope — an API health/stable-GET check with schema validation and a UI home-page check — and take them through Verify. The scaffold is done only when both pass, including the prove-fail check.
 
 ## Build phases
@@ -78,6 +80,8 @@ Run only the phases the strategy calls for, loading each reference when its phas
 | `[SDET: Data]` | `references/test-data.md` | factories, Faker, testcontainers, per-test isolation and cleanup |
 | `[SDET: Perf]` | `references/performance.md` | Locust load profiles, thresholds, safe targets |
 | `[SDET: CI]` | `references/ci-github-actions.md` | GitHub Actions workflow, gating, sharding, report artifacts |
+
+`[SDET: CI]` runs **on demand only** — when the user asks ("add tests to CI"). Scaffold and the full pipeline create no workflows; after Verify on a full pipeline, offer CI setup in one line.
 
 **Live browser exploration:** when a browser-control tool is available and the UI or API phase needs the live app — page-object selectors, captured endpoints and response shapes, or journey mapping for the strategy — load `references/browser-exploration.md` and follow its setup checks before the first navigation. The browser is for scouting; the deliverable is always test code run by the project's runner.
 
@@ -107,7 +111,7 @@ These hold in every phase:
 1. Read base URLs, credentials, and tokens from environment variables or config files. Put placeholder names in `.env.example`; keep real secrets out of the repo.
 2. Run tests against local or staging environments by default.
 3. Before any run that targets a production URL, ask the user for explicit confirmation, and limit it to read-only smoke tests — no writes, no data creation, no load.
-4. Run performance and load tests only against local or staging targets.
+4. Run performance and load tests only against local or staging targets. On a vendor-hosted product, only against a sandbox, and only after the user confirms the vendor's written approval.
 5. Ask the user before installing dependencies, starting containers, or changing CI configuration that runs on push.
 6. Browser exploration follows the same rules. On production it is read-only navigation, except for a specific write action the user explicitly asks for — state what it will do and get a yes for each one.
 
@@ -139,4 +143,5 @@ Load each only when its phase starts:
 - `references/performance.md` — Locust load tests and thresholds.
 - `references/ci-github-actions.md` — workflows, gating, sharding, artifacts, adapting to other CI.
 - `references/verification.md` — run, prove-fail check, and report format.
+- `references/vendor-apps.md` — black-box mode for vendor products: scope, stable locators on generated markup, SSO/MFA, Swagger spec refresh and overrides, drift check, sandbox data.
 - `references/browser-exploration.md` — live-app scouting with a browser-control tool: selector discovery, journey mapping, API capture, e2e debugging, fallbacks.

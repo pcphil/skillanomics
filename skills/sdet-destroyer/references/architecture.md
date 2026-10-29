@@ -9,33 +9,47 @@ List every dependency to add and ask the user before installing.
 | Situation | Location | Stack |
 |-----------|----------|-------|
 | One service, tests ship with the code (default) | `tests/` inside the app repo | the app's stack |
-| Several services (multiple app services in compose, a monorepo with several apps), or the user asks | a standalone test repo, same tree at its root | Python by default; confirm with the user |
+| Several services (multiple app services in compose, a monorepo with several apps), a vendor product (`references/vendor-apps.md`), or the user asks | a standalone test repo: same `tests/` tree; configs, env files, `.auth/`, `reports/` at its root | Python by default; confirm with the user |
 
 Unit tests stay in the app repo either way. Only API and UI move to a standalone repo. Record the decision in the strategy and in `tests/TESTING.md`.
+
+**Root footprint.** An app repo already has owners: in-app, everything the scaffold adds lives inside `tests/` — runner configs, auth state, reports included — and the repo root gets only the additions in §2 rule 1. A standalone repo is new, so its configs sit at its root.
 
 ## 2. Coexisting with an existing repo
 
 An in-app scaffold adds to a repo the team already owns. Adding new tests must never change how existing tests or the app behave.
 
-1. **Shared files are merged, never overwritten** — `pyproject.toml`, root `conftest.py`, `.gitignore`, CI workflows, `.pre-commit-config.yaml`, `package.json`. Add the smallest change in the format the repo already uses, show the diff, and wait for approval.
-2. **One pytest config.** If any of `pytest.ini`, `pyproject.toml [tool.pytest.ini_options]`, `setup.cfg [tool:pytest]`, or `tox.ini [pytest]` exists, extend that file. Create `[tool.pytest.ini_options]` only when none exists — `pytest.ini` silently wins over `pyproject.toml`, so two configs means one is ignored.
-3. **Follow the repo's tooling.** Dependency tool (uv, poetry, pip-tools, plain pip), ruff/mypy config, and `.python-version` stay as the team set them; add a test group in their format (e.g. `[tool.poetry.group.test.dependencies]`).
-4. **Scope stricter options to new tests.** `-n auto`, `--timeout`, and `--reruns` go in the layer run commands and CI, never in global `addopts`. Add `--strict-markers` globally only after registering every marker the existing suite uses.
-5. **Avoid fixture collisions.** In Assess, list existing fixtures (`pytest --fixtures`). Known clash: pytest-django provides `settings` — this skill's settings fixture is `env_settings`. Rename any other fixture that collides.
-6. **Leave existing tests in place.** Do not move or rename them. Add `api/`, `e2e/`, `support/` beside them. If a root `tests/conftest.py` exists, append only the `pytest_plugins` line. When existing unit tests live flat in `tests/`, new unit tests follow that location; record it in `TESTING.md`.
-7. **Env files stay inside `tests/`** (section 4) so no framework loader (Next.js, Vite, Django, docker compose) picks them up.
+1. **Root files in-app: only these, only added to.**
+   - `pyproject.toml` — the test dependency group; a pytest section only when the repo has none (§5).
+   - `uv.lock` (or the repo's lockfile) — updated by the dependency tool.
+   - `package.json` — devDependencies and `test:*` scripts.
+   - An existing task runner (Makefile, justfile, tox, nox) — new test targets.
+   - `.gitignore` — `tests/.env`, `tests/.auth/`, `tests/reports/`.
+
+   CI workflows come later, on demand (`references/ci-github-actions.md`). Never create or change `.python-version` or `requires-python`. Shared files are merged, never overwritten: add the smallest change in the format the repo already uses.
+2. **Footprint preview.** Before writing anything, show the user every root file the scaffold will touch, marked **new** or **added to**, with the diff of each addition. Write after one approval.
+3. **One pytest config.** If any of `pytest.ini`, `pyproject.toml [tool.pytest.ini_options]`, `setup.cfg [tool:pytest]`, or `tox.ini [pytest]` exists, extend that file. Create `[tool.pytest.ini_options]` only when none exists — `pytest.ini` silently wins over `pyproject.toml`, so two configs means one is ignored.
+4. **Follow the repo's tooling.** Dependency tool (uv, poetry, pip-tools, plain pip), lint and type-check config, and the Python version stay as the team set them; add a test group in their format (e.g. `[tool.poetry.group.test.dependencies]`). New test code follows the team's linter; add no lint config of its own.
+5. **Scope stricter options to new tests.** `-n auto`, `--timeout`, and `--reruns` go in the layer run commands and CI, never in global `addopts`. Add `--strict-markers` globally only after registering every marker the existing suite uses.
+6. **Avoid fixture collisions.** In Assess, list existing fixtures (`pytest --fixtures`). Known clash: pytest-django provides `settings` — this skill's settings fixture is `env_settings`. Rename any other fixture that collides.
+7. **Leave existing tests in place.** Do not move or rename them. Add `api/`, `e2e/`, `support/` beside them. If a root `tests/conftest.py` exists, append only the `pytest_plugins` line. When existing unit tests live flat in `tests/`, new unit tests follow that location; record it in `TESTING.md`.
+8. **Env files stay inside `tests/`** (section 4) so no framework loader (Next.js, Vite, Django, docker compose) picks them up.
+9. **Existing test folders and frameworks.** When tests live in `test/`, `__tests__/`, `e2e/`, or similar, add new layers inside that folder and record it in `TESTING.md`; read `tests/` in this skill as that folder. When a layer already uses another framework (Cypress for e2e, Jest for unit), stop and ask the user before adding a second one beside it.
 
 ## 3. Layout
 
 ### Python
 
 ```
-tests/                              # standalone repo: this tree sits at the repo root
+tests/                              # standalone repo: same tree; env files, .auth/, reports/ at the repo root
 ├── TESTING.md
 ├── .env.example                    # committed: every TEST_* variable, placeholder values
 ├── .env.local                      # committed: non-secret local values
 ├── .env.staging                    # committed: non-secret staging values
 ├── .env                            # git-ignored: secrets + personal overrides
+├── .auth/                          # git-ignored: per-role storage state
+├── reports/                        # git-ignored: JUnit XML, HTML reports
+├── mypy.ini                        # only if the user opted in (§5)
 ├── conftest.py                     # pytest_plugins only (+ nothing else)
 ├── settings.py                     # env loading + typed settings
 ├── support/
@@ -46,7 +60,9 @@ tests/                              # standalone repo: this tree sits at the rep
 │   │   └── data.py                 # database_url, db_session, data fixtures
 │   ├── clients/                    # one API client per resource (references/api.md)
 │   │   └── <service>/              # standalone multi-service: group by service
-│   └── models/                     # generated from OpenAPI, or hand-written
+│   ├── models/                     # generated from OpenAPI, or hand-written
+│   │   # vendor mode adds: refresh.py, generate.py, openapi.json, openapi.overrides.json
+│   └── sweep.py                    # vendor mode: delete leftover sdet- records
 ├── factories/                      # data builders (references/test-data.md)
 ├── unit/
 │   └── test_env_example.py         # U-00: .env.example stays complete
@@ -58,8 +74,8 @@ tests/                              # standalone repo: this tree sits at the rep
 │   └── pages/
 └── perf/
     └── locustfile.py
-pyproject.toml                      # pytest, test dependency group, ruff, mypy
-.python-version
+pyproject.toml                      # in-app: + test group (+ pytest markers if no config). Standalone: full sample (§5)
+.python-version                     # standalone only
 ```
 
 There is **no `.env.production`**. Production values exist only in CI (section 4).
@@ -70,6 +86,9 @@ There is **no `.env.production`**. Production values exist only in CI (section 4
 tests/
 ├── TESTING.md
 ├── .env.example  .env.local  .env.staging  .env   # same convention as Python
+├── .auth/  reports/                 # git-ignored
+├── playwright.config.ts             # only when the repo has none (§7); standalone: at the root
+├── vitest.config.ts                 # only when the repo has no Vitest/Vite config
 ├── settings.ts
 ├── support/{clients/,models/}
 ├── factories/
@@ -81,11 +100,10 @@ tests/
 │   ├── auth.setup.ts               # per-role storage state
 │   └── pages/
 └── perf/locustfile.py              # Locust is Python on every stack
-playwright.config.ts
-vitest.config.ts
+package.json                         # + devDependencies, test:* scripts
 ```
 
-Add to `.gitignore` (merge): `reports/`, `.auth/`, `tests/.env`. Standalone repo: `.env` at root instead of `tests/.env`.
+Add to `.gitignore` (merge): `tests/.env`, `tests/.auth/`, `tests/reports/`. Standalone repo: `.env`, `.auth/`, `reports/` at its root — read `tests/.auth/` and `tests/reports/` in this skill as those.
 
 ## 4. Env files and settings
 
@@ -118,6 +136,7 @@ ENV_DIR = Path(__file__).parent  # standalone repo: Path(__file__).parents[1]
 class Role(BaseModel):
     username: str
     password: str
+    totp_secret: str | None = None  # vendor SSO with MFA (references/vendor-apps.md §4)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="TEST_")
@@ -151,7 +170,7 @@ class Settings(BaseSettings):
         pwd = os.environ.get(f"TEST_ROLE_{key}_PASSWORD")
         if not user or not pwd:
             raise RuntimeError(f"TEST_ROLE_{key}_USERNAME / TEST_ROLE_{key}_PASSWORD missing for {self.target_env}")
-        return Role(username=user, password=pwd)
+        return Role(username=user, password=pwd, totp_secret=os.environ.get(f"TEST_ROLE_{key}_TOTP_SECRET"))
 
 def load_env_files() -> str:
     """Exported vars win, then .env, then .env.<target>. Returns the target env."""
@@ -250,9 +269,13 @@ export const roleNames = env.TEST_ROLES.split(",").map((r) => r.trim()).filter(B
 export const roles = Object.fromEntries(
   roleNames.map((name) => {
     const key = name.toUpperCase();
-    return [name, { username: required(`TEST_ROLE_${key}_USERNAME`), password: required(`TEST_ROLE_${key}_PASSWORD`) }];
+    return [name, {
+      username: required(`TEST_ROLE_${key}_USERNAME`),
+      password: required(`TEST_ROLE_${key}_PASSWORD`),
+      totpSecret: process.env[`TEST_ROLE_${key}_TOTP_SECRET`], // vendor SSO with MFA
+    }];
   }),
-) as Record<string, { username: string; password: string }>;
+) as Record<string, { username: string; password: string; totpSecret?: string }>;
 
 export const settings = {
   targetEnv: env.TEST_TARGET_ENV,
@@ -271,12 +294,9 @@ grepInvert: settings.targetEnv === "production" ? /@writes/ : undefined,
 
 ## 5. Python project config
 
-### pyproject.toml (new scaffold; in-app: merge these sections only)
+### In-app: pyproject.toml additions
 
 ```toml
-[project]
-requires-python = ">=3.11"
-
 [dependency-groups]
 test = [
   "pytest>=8",
@@ -294,15 +314,11 @@ test = [
   "factory-boy",
   "testcontainers[postgres]", # integration needs a real DB
   "sqlalchemy",               # per-worker database setup
-  "ruff",
-  "mypy",
 ]
 
+# only when the repo has no pytest config (§2 rule 3); otherwise add the markers to the existing one
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
-addopts = ["--strict-markers", "--junitxml=reports/junit.xml"]
-timeout = 60
 markers = [
   "smoke: P0 critical path, gates every merge",
   "regression: full coverage, nightly / pre-release",
@@ -312,27 +328,46 @@ markers = [
   "slow: long-running, opt-in",
   "role(name): run the e2e test as this role; role(None) = anonymous",
 ]
-
-[tool.ruff.lint]
-extend-select = ["PT", "B", "I"]
-
-[tool.mypy]
-files = ["tests/support", "tests/settings.py"]
-strict = true
 ```
+
+No `addopts`, `testpaths`, or `timeout`: a bare `pytest` keeps collecting and behaving exactly as before. Run options go on the commands (§7).
+
+### Standalone: pyproject.toml
+
+The same test group and markers, plus settings the repo owns outright:
+
+```toml
+[project]
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+timeout = 60
+markers = [ ... as above ... ]
+```
+
+And a `.python-version` with `3.12`, so uv, pyenv, and CI use the same interpreter.
 
 - Install: `uv sync --group test`; commit `uv.lock`. Repo on poetry/pip-tools/pip → same packages in its format.
-- `timeout = 60` and `--strict-markers` sit in global config **only for a new scaffold**. In-app with existing tests, follow section 2 rule 4.
-- `-n auto` and `--reruns` are never global — they go in run commands (section 7).
-- mypy covers typed infrastructure (`support/`, settings), not test bodies.
+- `-n auto`, `--reruns`, and report paths are never in config — they go in run commands (section 7).
 
-### .python-version
+### Type checking (opt-in)
 
+Ask in Scaffold, with the dependency list: "Add type checking for the test support layer? (mypy strict on `tests/support/` and `settings.py`, its own command; your existing mypy/ruff setup is untouched.) Default: no." Skip the question when the repo already type-checks `tests/`. Record the answer in `TESTING.md` so later runs do not ask again.
+
+On yes, add `mypy` to the test group and:
+
+```ini
+# tests/mypy.ini — run: uv run mypy --config-file tests/mypy.ini
+[mypy]
+files = tests/support, tests/settings.py
+strict = true
+plugins = pydantic.mypy
 ```
-3.12
-```
 
-CI, uv, and pyenv read it, so local and CI cannot drift. In-app: keep the repo's existing file.
+Standalone repo: the same settings as `[tool.mypy]` in its `pyproject.toml`.
 
 ## 6. Fixture modules
 
@@ -365,12 +400,14 @@ When the repo already uses another runner for a layer, keep it.
 Python layer commands (record them in `TESTING.md`):
 
 ```bash
-uv run pytest tests/unit -n auto
-uv run pytest tests/api -n auto --timeout 30
-uv run pytest tests/e2e -m smoke -n auto            # CI adds: --reruns 1
-uv run pytest tests/e2e --browser firefox --browser webkit   # nightly
-uv run pytest tests/e2e --device "Pixel 7"                     # nightly
+uv run pytest tests/unit -n auto --junitxml=tests/reports/junit-unit.xml
+uv run pytest tests/api -n auto --timeout 30 --junitxml=tests/reports/junit-api.xml
+uv run pytest tests/e2e -m smoke -n auto --junitxml=tests/reports/junit-e2e.xml --html=tests/reports/e2e.html --self-contained-html   # CI adds: --reruns 1
+uv run pytest tests/e2e --browser firefox --browser webkit   # nightly / pre-release
+uv run pytest tests/e2e --device "Pixel 7"                     # nightly / pre-release
 ```
+
+When the repo has a task runner (Makefile, justfile, `package.json` scripts, tox, nox), add these as targets there (`test-unit`, `test-api`, `test-e2e`, `test-smoke`) as part of the footprint preview. Otherwise record them in `TESTING.md`. Never create a new task-runner file in-app.
 
 pytest-playwright runs Chromium by default. Its base URL comes from the `base_url` override in `tests/e2e/conftest.py`:
 
@@ -385,41 +422,55 @@ def base_url(env_settings):
 
 ### Vitest (unit only)
 
+An existing Vitest or Vite config gets a `test` block. Without one, create `tests/vitest.config.ts` and run it with `vitest run --config tests/vitest.config.ts`:
+
 ```ts
-// vitest.config.ts
+// tests/vitest.config.ts — paths resolve from the repo root, where the scripts run
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     include: ["tests/unit/**/*.test.ts", "src/**/*.test.ts"],
     reporters: ["default", "junit"],
-    outputFile: { junit: "reports/junit-unit.xml" },
+    outputFile: { junit: "tests/reports/junit-unit.xml" },
   },
 });
 ```
 
 ### Playwright Test (API + UI)
 
+An existing `playwright.config.*` means the framework exists: extend it. Without one, create `tests/playwright.config.ts` (standalone: at the root, importing `./tests/settings`, with `.auth` and `reports` at the root) and run it through `package.json` scripts:
+
+```json
+"test:unit": "vitest run --config tests/vitest.config.ts",
+"test:api": "playwright test -c tests/playwright.config.ts --project=api",
+"test:e2e": "playwright test -c tests/playwright.config.ts --project=chromium"
+```
+
 ```ts
-// playwright.config.ts
+// tests/playwright.config.ts — paths resolve from the repo root, where the scripts run (as in settings.ts)
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
-import { settings } from "./tests/settings";
+import { settings } from "./settings";
+
+const authDir = path.resolve("tests/.auth");
+const reportDir = path.resolve("tests/reports");
 
 const e2e = (name: string, device: object) => ({
   name,
   testMatch: /e2e\/.*\.spec\.ts/,
-  use: { ...device, storageState: ".auth/member.json" },
+  use: { ...device, storageState: path.join(authDir, "member.json") },
   dependencies: ["setup"],
 });
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: ".",
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   reporter: [
     ["list"],
-    ["junit", { outputFile: "reports/junit-pw.xml" }],
-    ["html", { open: "never", outputFolder: "reports/html" }],
+    ["junit", { outputFile: path.join(reportDir, "junit-pw.xml") }],
+    ["html", { open: "never", outputFolder: path.join(reportDir, "html") }],
   ],
   use: {
     baseURL: settings.baseUrl,
@@ -480,8 +531,8 @@ Code shapes: `references/ui-e2e.md`.
 
 ## 12. Reporting
 
-- JUnit XML from every runner into `reports/` — CI reads it.
-- Human report: pytest-html (`--html=reports/report.html --self-contained-html`), Playwright HTML, Locust `--html`.
+- JUnit XML from every runner into `tests/reports/` (standalone: `reports/`) — CI reads it once CI is set up.
+- Human report: pytest-html (`--html=tests/reports/report.html --self-contained-html`), Playwright HTML, Locust `--html`.
 - On e2e failure: trace, screenshot, video retained.
 
 ## 13. Proof the scaffold works
@@ -547,4 +598,4 @@ test("E-00 home page loads @smoke", async ({ homePage }) => {
 
 ## 14. Output of this phase
 
-The scaffold files, the approved dependency list and shared-file diffs, U-00 / I-00 / E-00 passing Verify, and the exact run command per layer recorded in `tests/TESTING.md`.
+The scaffold files, the approved footprint preview (root files and diffs) and dependency list, the type-checking answer, U-00 / I-00 / E-00 passing Verify, and the exact run command per layer recorded in `tests/TESTING.md`.

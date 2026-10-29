@@ -12,7 +12,7 @@ Stack: Python uses `pytest-playwright` (sync API, `test_*.py`). TS uses `@playwr
 
 ## 2. Page objects
 
-Rules are in `references/architecture.md` §7. Shapes:
+Rules are in `references/architecture.md` §10. Shapes:
 
 ### Python
 
@@ -112,7 +112,7 @@ In order of preference:
 
 1. `getByRole` / `get_by_role` with accessible name.
 2. `getByLabel`, `getByPlaceholder`, `getByText`.
-3. `getByTestId` / `get_by_test_id` when no accessible name exists — add a `data-testid` to the app and tell the user.
+3. `getByTestId` / `get_by_test_id` when no accessible name exists — add a `data-testid` to the app and tell the user. In vendor mode the app cannot be changed: use the stability check and fragile-locator rules in `references/vendor-apps.md` §3.
 
 Selectors are drafted from the app's real markup — read the component source or snapshot the page before writing them. When a browser-control tool is available, take selectors from a live accessibility snapshot (`references/browser-exploration.md`, selector discovery).
 
@@ -181,21 +181,21 @@ for (const role of roleNames) {
   setup(`authenticate as ${role}`, async ({ request }) => {
     const res = await request.post(`${settings.apiBase}/auth/login`, { data: roles[role] });
     if (!res.ok()) throw new Error(`login failed for role ${role}: ${res.status()}`);
-    await request.storageState({ path: `.auth/${role}.json` });
+    await request.storageState({ path: `tests/.auth/${role}.json` }); // standalone: .auth/
   });
 }
 ```
 
 ```ts
 // default role for all e2e projects — playwright.config.ts, inside each browser project's `use`
-storageState: ".auth/member.json",
+storageState: path.join(authDir, "member.json"), // authDir = tests/.auth (references/architecture.md §7)
 
 // per file or describe block
-test.use({ storageState: ".auth/admin.json" });          // as admin
+test.use({ storageState: path.resolve("tests/.auth/admin.json") });          // as admin
 test.use({ storageState: { cookies: [], origins: [] } }); // anonymous
 ```
 
-`.auth/` holds live session cookies — keep it git-ignored.
+`tests/.auth/` holds live session cookies — keep it git-ignored.
 
 ## 6. Data setup through the API
 

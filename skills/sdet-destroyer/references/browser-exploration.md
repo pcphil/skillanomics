@@ -35,7 +35,7 @@ Report every entity created on staging or production at the end of exploration s
 1. Navigate to the screen.
 2. Take an accessibility snapshot of the page.
 3. For each element the page object needs, pick the locator from the snapshot in this order: role + accessible name → label → placeholder/text → test ID.
-4. Note elements with no accessible name — these need a `data-testid` added to the app; tell the user.
+4. Note elements with no accessible name — these need a `data-testid` added to the app; tell the user. In vendor mode, run the stability check instead and flag fragile locators (`references/vendor-apps.md` §3). Locate inside iframes through the frame.
 5. Drive the journey step by step and snapshot after each transition, so each page object's locators come from the state the test will actually see.
 6. Write the page object with exactly those locators.
 
@@ -56,6 +56,7 @@ Walk each directed journey and record:
 3. Ignore third-party requests (analytics, CDNs, ads).
 4. Turn response bodies into draft schemas under `tests/api/schemas/` — field names and types only. Prefer an OpenAPI spec or typed models in the codebase when they exist; use captured shapes to fill gaps or check the spec against reality.
 5. Strip tokens, cookies, emails, names, and other personal data from anything written down. Raw captures stay out of the repo.
+6. In vendor mode, the endpoints recorded here are the tested-endpoint list, and the captured shapes feed the drift check (`references/vendor-apps.md` §6–7).
 
 ### 4.4 Debugging a failing e2e test (in Verify)
 

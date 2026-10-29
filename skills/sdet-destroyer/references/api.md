@@ -28,7 +28,8 @@ Source, decided once in Scaffold and recorded in `tests/TESTING.md`:
 1. **OpenAPI spec exists → generate.** Commit a generate script in `tests/support/models/` and the generated output. Never hand-edit generated files; rerun the script when the spec changes.
    - Python: `datamodel-codegen --input openapi.yaml --input-file-type openapi --output-model-type pydantic_v2.BaseModel --extra-fields forbid --output tests/support/models/generated.py`
    - TS: bundle the spec to `tests/support/models/openapi.json` and generate types with `openapi-typescript openapi.json -o tests/support/models/api.d.ts`. Validate with ajv against the spec's component schemas (OpenAPI 3.1 is JSON Schema 2020-12; for a 3.0 spec, convert schemas in the generate script so `nullable` is honored).
-2. **No spec → hand-write.** Python: pydantic models in `tests/support/models/`. TS: JSON Schema files in `tests/support/models/schemas/` plus hand-written types. Draft them from codebase types (route handlers, serializers, existing pydantic/zod models) and, when a browser-control tool is available, from captured responses (`references/browser-exploration.md`).
+2. **Vendor spec (Swagger / OpenAPI from the vendor) → generate from a committed copy, with overrides.** Extra fields are allowed and drift is reported; see `references/vendor-apps.md` §5–6, which replaces the closed-shape rule below.
+3. **No spec → hand-write.** Python: pydantic models in `tests/support/models/`. TS: JSON Schema files in `tests/support/models/schemas/` plus hand-written types. Draft them from codebase types (route handlers, serializers, existing pydantic/zod models) and, when a browser-control tool is available, from captured responses (`references/browser-exploration.md`).
 
 Closed shapes: forbid extra fields (`--extra-fields forbid`, `additionalProperties: false`) where the API promises them, so unexpected fields fail the test.
 

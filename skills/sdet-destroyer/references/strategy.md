@@ -21,6 +21,7 @@ List where the system is most likely to break or most costly when it does. Rate 
 - **Integrations** — third-party APIs, queues, webhooks, timeouts.
 - **Load-sensitive paths** — hot endpoints, search, checkout, anything with N+1 risk.
 - **Recent change** — areas with recent commits or open bugs (check git history).
+- **Vendor releases and configuration drift** — vendor mode only (`references/vendor-apps.md` §2).
 
 High risks get coverage at more than one layer. Low risks may get none — say so explicitly.
 
@@ -112,11 +113,14 @@ Written to `tests/TESTING.md` in the target repo after full-pipeline sign-off. K
 <exact commands per layer>
 
 ## CI
-<workflow file, what gates merge, what runs nightly>
+<added on demand: workflow files, what gates merge, what runs nightly — or "not set up">
 
 ## Risk map
 <High risks → case IDs covering them>
 
 ## Journeys & endpoints
 <filled after live browser exploration — format in references/browser-exploration.md>
+
+## Vendor
+<vendor mode only — format in references/vendor-apps.md §10>
 ```

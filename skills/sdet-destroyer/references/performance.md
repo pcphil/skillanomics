@@ -4,6 +4,8 @@ Loaded at `[SDET: Perf]`. Locust drives HTTP load from Python and is used on eve
 
 **Targets: local or staging only.** Load never runs against production. Confirm the target URL with the user and confirm staging capacity or rate limits before the first run.
 
+**Vendor-hosted products (SaaS):** off by default. Run only against a vendor sandbox, after the user confirms the vendor's written approval, within its limits (`references/vendor-apps.md` §8).
+
 ## 1. What to measure
 
 From the strategy, for each hot path:
@@ -91,18 +93,18 @@ def enforce_thresholds(environment, **_kwargs):
 ```bash
 # local smoke (headless)
 locust -f tests/perf/locustfile.py --host "$TEST_BASE_URL" --headless -u 5 -r 1 -t 1m \
-  --html reports/perf.html --csv reports/perf
+  --html tests/reports/perf.html --csv tests/reports/perf
 
 # staging load
 locust -f tests/perf/locustfile.py --host "$TEST_BASE_URL" --headless -u 200 -r 10 -t 15m \
-  --html reports/perf.html --csv reports/perf
+  --html tests/reports/perf.html --csv tests/reports/perf
 ```
 
 Before running, check that `$TEST_BASE_URL` is a local or staging host. If it resolves to production, stop and tell the user.
 
 ## 6. In CI
 
-Perf runs are not on the merge gate. Run them on a schedule or manual trigger against staging — see `references/ci-github-actions.md`. Upload `reports/perf.html` and the CSVs as artifacts.
+Perf runs are not on the merge gate. Run them on a schedule or manual trigger against staging — see `references/ci-github-actions.md`. Upload `tests/reports/perf.html` and the CSVs as artifacts.
 
 ## 7. Reading results
 
