@@ -5,7 +5,7 @@ description: >
   test plans, and unit/integration/e2e case generation from a requirement or
   existing code, optionally emitting runnable pytest or Playwright test files.
   Triggers on "test strategy", "test plan", "write test cases", "test coverage",
-  "QA cases", "SDET", "pytest", "Playwright tests". Does NOT activate for writing
+  "QA cases", "pytest", "Playwright tests". Does NOT activate for writing
   feature/implementation code, debugging existing failing tests, or running
   suites/CI.
 ---
