@@ -54,7 +54,7 @@ def user_payload(**overrides):
 Fixture that creates via the API and cleans up:
 
 ```python
-# tests/conftest.py
+# tests/support/fixtures/data.py
 import pytest
 from tests.factories.user import user_payload
 
@@ -105,23 +105,47 @@ Use for integration tests that need a real DB, cache, or broker. Requires Docker
 
 ### Python
 
+Under xdist every worker runs its own copy of each session fixture, so a per-worker container would mean N containers. Instead: **one database server for the run, one database per worker on it.**
+
+- **Parallel runs (`-n`)** — the server is started outside pytest and passed in as `TEST_DATABASE_URL`: a CI service container (`references/ci-github-actions.md` §2) or `docker compose up -d db` locally. A server started outside pytest has a clean lifecycle; one started by the first worker can be reaped when that worker exits while others still use it.
+- **Single-process runs** — with `TEST_DATABASE_URL` unset, the fixture starts a testcontainer itself, so `pytest tests/integration` works on a fresh clone with only Docker.
+
 ```python
-# tests/conftest.py
+# tests/support/fixtures/data.py — registered via pytest_plugins
 import pytest
-from testcontainers.postgres import PostgresContainer
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import sessionmaker
 
 @pytest.fixture(scope="session")
-def pg_url():
+def database_server(env_settings, worker_id):
+    """One Postgres server for the whole run."""
+    if env_settings.database_url:
+        yield env_settings.database_url
+        return
+    if worker_id != "master":
+        raise RuntimeError(
+            "TEST_DATABASE_URL must be set when running with -n: start one server "
+            "(docker compose up -d db, or a CI service container) and export its URL"
+        )
+    from testcontainers.postgres import PostgresContainer
     with PostgresContainer("postgres:16-alpine") as pg:
         yield pg.get_connection_url()
 
 @pytest.fixture(scope="session")
-def engine(pg_url):
-    engine = create_engine(pg_url)
+def engine(database_server, worker_id):
+    """One database per xdist worker, so workers never share rows."""
+    name = f"test_{worker_id}"
+    admin = create_engine(database_server, isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        conn.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+        conn.execute(text(f'CREATE DATABASE "{name}"'))
+    engine = create_engine(make_url(database_server).set(database=name))
     run_migrations(engine)          # the project's own migration entry point
-    return engine
+    yield engine
+    engine.dispose()
+    with admin.connect() as conn:
+        conn.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+    admin.dispose()
 
 @pytest.fixture
 def db_session(engine):
@@ -164,6 +188,6 @@ Pin image tags to the version production runs.
 
 ## 5. Environments
 
-- Local: app via the project's own run command or `docker compose up`; tests point at it via `BASE_URL`.
+- Local: app via the project's own run command or `docker compose up`; tests point at it via `TEST_BASE_URL`.
 - Staging: base URL and credentials from CI secrets.
 - One suite, many environments: only env vars change between targets — the code is identical.

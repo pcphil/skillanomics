@@ -129,18 +129,17 @@ Log in through the UI in exactly one test (E-01 proves the login journey). Every
 httpx serves the API clients; Playwright's request context is used here only because it writes browser storage state directly.
 
 ```python
-# tests/e2e/conftest.py (auth)
+# tests/support/fixtures/auth.py — registered via pytest_plugins
 import pytest
-from tests.settings import settings
 
 @pytest.fixture(scope="session")
-def storage_state_for(playwright, tmp_path_factory):
+def storage_state_for(playwright, tmp_path_factory, env_settings):
     states: dict[str, str] = {}
 
     def get(role: str) -> str:
         if role not in states:
-            creds = settings.role(role)
-            ctx = playwright.request.new_context(base_url=settings.api_base)
+            creds = env_settings.role(role)
+            ctx = playwright.request.new_context(base_url=env_settings.api_base)
             resp = ctx.post("/auth/login", data={"username": creds.username, "password": creds.password})
             assert resp.ok, f"login failed for role {role}: {resp.status}"
             path = tmp_path_factory.mktemp("auth") / f"{role}.json"
@@ -150,6 +149,15 @@ def storage_state_for(playwright, tmp_path_factory):
         return states[role]
 
     return get
+```
+
+```python
+# tests/e2e/conftest.py (overrides of pytest-playwright fixtures live here, not in plugin modules)
+import pytest
+
+@pytest.fixture(scope="session")
+def base_url(env_settings):
+    return env_settings.require("base_url")
 
 @pytest.fixture
 def browser_context_args(browser_context_args, storage_state_for, request):
@@ -160,7 +168,7 @@ def browser_context_args(browser_context_args, storage_state_for, request):
     return {**browser_context_args, "storage_state": storage_state_for(role)}
 ```
 
-Choose the role per test with `@pytest.mark.role("admin")`; `@pytest.mark.role(None)` runs anonymously; no marker means `member`.
+Choose the role per test with `@pytest.mark.role("admin")`; `@pytest.mark.role(None)` runs anonymously; no marker means `member`. Under xdist each worker produces its own storage state — sessions stay isolated per worker.
 
 ### TS
 

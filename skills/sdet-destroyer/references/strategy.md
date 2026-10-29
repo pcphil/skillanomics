@@ -104,9 +104,9 @@ Written to `tests/TESTING.md` in the target repo after full-pipeline sign-off. K
 ## Environments
 | Env | Base URL var | Allowed |
 |-----|--------------|---------|
-| local | BASE_URL | all |
-| staging | BASE_URL | all, load within limits |
-| production | BASE_URL | read-only smoke, explicit confirmation |
+| local | TEST_BASE_URL | all |
+| staging | TEST_BASE_URL | all, load within limits |
+| production | TEST_BASE_URL | read-only smoke, explicit confirmation |
 
 ## Running
 <exact commands per layer>

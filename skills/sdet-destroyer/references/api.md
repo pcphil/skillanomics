@@ -178,33 +178,33 @@ export class Api {
 
 ## 4. Auth fixtures per role
 
-Each role in settings gets an authenticated `Api`, logged in through the API once per session (Python) or worker (TS), plus `anon` with no credentials. The login path and token field below are placeholders — use what Assess found (bearer token, session cookie, OAuth client credentials).
+Each role in `TEST_ROLES` gets an authenticated `Api`, logged in through the API once per session (Python; once per xdist worker) or worker (TS), plus `anon` with no credentials. The login path and token field below are placeholders — use what Assess found (bearer token, session cookie, OAuth client credentials).
 
 ### Python
 
 ```python
-# tests/conftest.py
+# tests/support/fixtures/api.py — registered via pytest_plugins in tests/conftest.py
 import httpx
 import pytest
-from tests.settings import settings
+from tests.settings import Settings
 from tests.support.clients import Api
 
-def _token(role: str) -> str:
-    creds = settings.role(role)
-    resp = httpx.post(f"{settings.api_base}/auth/login",
+def _token(env: Settings, role: str) -> str:
+    creds = env.role(role)
+    resp = httpx.post(f"{env.api_base}/auth/login",
                       json={"username": creds.username, "password": creds.password}, timeout=10)
     if not resp.is_success:
         raise RuntimeError(f"login failed for role {role}: {resp.status_code}")
     return resp.json()["token"]
 
 @pytest.fixture(scope="session")
-def api_as():
+def api_as(env_settings):
     clients: dict[str | None, httpx.Client] = {}
 
     def get(role: str | None) -> Api:
         if role not in clients:
-            headers = {"Authorization": f"Bearer {_token(role)}"} if role else {}
-            clients[role] = httpx.Client(base_url=settings.api_base, headers=headers, timeout=10)
+            headers = {"Authorization": f"Bearer {_token(env_settings, role)}"} if role else {}
+            clients[role] = httpx.Client(base_url=env_settings.api_base, headers=headers, timeout=10)
         return Api(clients[role])
 
     yield get
@@ -301,7 +301,7 @@ def test_i11_create_order_rejects_empty_items(member_api):
     assert "items" in resp.text
 
 # I-12 other member cannot read the order
-# needs a second role, e.g. ROLES=member,other_member,admin, with an other_member_api fixture
+# needs a second role, e.g. TEST_ROLES=member,other_member,admin, with an other_member_api fixture
 @pytest.mark.api
 @pytest.mark.writes
 def test_i12_other_member_cannot_read_order(other_member_api, order):

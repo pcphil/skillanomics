@@ -35,7 +35,7 @@ Start every response with the active phase label: `[SDET: <Phase>]` — one of `
 Gather facts before any decision. This phase writes no files.
 
 1. Detect the stack: look for `pyproject.toml` / `requirements*.txt` / `setup.cfg` (Python) and `package.json` / `tsconfig.json` (JS/TS). A repo can be both — note which part is which.
-2. Detect the existing test setup: test directories, runner config (`pytest.ini`, `conftest.py`, `playwright.config.*`, `vitest.config.*`), and representative existing tests. Note their style: naming, fixtures, folder layout, assertion style.
+2. Detect the existing test setup: test directories, runner config (`pytest.ini`, `pyproject.toml`, `setup.cfg`, `tox.ini`, `conftest.py`, `playwright.config.*`, `vitest.config.*`), existing fixtures (`pytest --fixtures`), env files and their loaders, dependency tool, and representative existing tests. Note their style: naming, fixtures, folder layout, assertion style.
 3. Read `tests/TESTING.md` if present — it holds this project's agreed strategy and conventions. Follow it over any default in this skill.
 4. Detect CI: files under `.github/workflows/`.
 5. Detect environments: how the app runs locally (scripts, `docker-compose*`, `Makefile`), base URLs and env var names in config or `.env.example`.
@@ -62,7 +62,7 @@ After sign-off on a full pipeline, write the agreed strategy and conventions to 
 Only when Assess found no framework. Load `references/architecture.md`.
 
 1. Decide the location: `tests/` inside the app repo by default; a standalone test repo when Assess found several services or the user asks. A standalone repo defaults to Python — confirm with the user.
-2. Create the layout, runner config, typed settings (per-environment config, role registry, fail-fast on missing values), API client layer, role-based auth fixtures, page-object fixtures (if UI is in scope), marker/tag scheme, and reporting for the stack.
+2. Create the layout, runner config, typed settings (`TEST_`-prefixed env files inside `tests/`, role registry, fail-fast on missing values), API client layer, role-based auth fixtures, page-object fixtures (if UI is in scope), marker/tag scheme, and reporting for the stack. In an existing repo, follow the coexistence rules in `references/architecture.md`: merge shared files with an approved diff, keep existing tests and tooling in place, and scope stricter pytest options to the new tests.
 3. List every dependency to add and ask the user before installing anything.
 4. Ship one working example test per layer in scope — an API health/stable-GET check with schema validation and a UI home-page check — and take them through Verify. The scaffold is done only when both pass, including the prove-fail check.
 

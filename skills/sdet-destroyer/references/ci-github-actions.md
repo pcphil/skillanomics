@@ -24,44 +24,61 @@ on:
     branches: [main]
 
 jobs:
-  unit-api:
+  unit-integration:
     runs-on: ubuntu-latest
+    services:
+      postgres:                     # shared DB server; each xdist worker creates its own database
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - run: pytest tests/unit tests/api -m "not slow" --junitxml=reports/junit-unit-api.xml
+      - uses: astral-sh/setup-uv@v5   # reads .python-version
+      - run: uv sync --group test
+      - run: uv run pytest tests/unit tests/integration -n auto -m "not slow" --junitxml=reports/junit-unit.xml
         env:
-          TARGET_ENV: local
-          BASE_URL: http://localhost:8000
-          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
-          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reports-unit-api
+          name: reports-unit
+          path: reports/
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --group test
+      - run: <start the app in the background, e.g. docker compose up -d --wait>
+      - run: uv run pytest tests/api -n auto --timeout 30 --junitxml=reports/junit-api.xml
+        env:
+          TEST_TARGET_ENV: local
+          TEST_BASE_URL: http://localhost:8000
+          TEST_ROLE_MEMBER_USERNAME: ${{ secrets.TEST_ROLE_MEMBER_USERNAME }}
+          TEST_ROLE_MEMBER_PASSWORD: ${{ secrets.TEST_ROLE_MEMBER_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reports-api
           path: reports/
 
   e2e-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - run: playwright install --with-deps chromium
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --group test
+      - run: uv run playwright install --with-deps chromium
       - run: <start the app in the background, e.g. docker compose up -d --wait>
-      - run: pytest tests/e2e -m smoke --base-url "$BASE_URL" --junitxml=reports/junit-e2e.xml --html=reports/e2e.html --self-contained-html
+      - run: uv run pytest tests/e2e -m smoke -n auto --reruns 1 --junitxml=reports/junit-e2e.xml --html=reports/e2e.html --self-contained-html
         env:
-          TARGET_ENV: local
-          BASE_URL: http://localhost:8000
-          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
-          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
+          TEST_TARGET_ENV: local
+          TEST_BASE_URL: http://localhost:8000
+          TEST_ROLE_MEMBER_USERNAME: ${{ secrets.TEST_ROLE_MEMBER_USERNAME }}
+          TEST_ROLE_MEMBER_PASSWORD: ${{ secrets.TEST_ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -71,7 +88,9 @@ jobs:
             test-results/
 ```
 
-The `unit-api` job needs the service running when `tests/api` hits a live server — add the same start step as `e2e-smoke`, or split API tests into their own job.
+- The test settings read `TEST_*` variables only, so CI env never collides with the app's own variables. Secrets are named the same (`TEST_ROLE_MEMBER_PASSWORD`).
+- `-n`, `--timeout`, and `--reruns` live in these commands, not in global pytest config (`references/architecture.md` §2).
+- Repo on poetry or pip: keep its install step (`poetry install --with test`, `pip install -r requirements-dev.txt`) and `actions/setup-python` with `python-version-file: .python-version`.
 
 ## 3. JS / TS workflow
 
@@ -111,10 +130,10 @@ jobs:
       - run: npm ci
       - run: npx playwright test --project=api   # request-only: no browser install needed
         env:
-          TARGET_ENV: local
-          BASE_URL: http://localhost:3000
-          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
-          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
+          TEST_TARGET_ENV: local
+          TEST_BASE_URL: http://localhost:3000
+          TEST_ROLE_MEMBER_USERNAME: ${{ secrets.TEST_ROLE_MEMBER_USERNAME }}
+          TEST_ROLE_MEMBER_PASSWORD: ${{ secrets.TEST_ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -137,10 +156,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --project=chromium --grep @smoke --shard ${{ matrix.shard }}
         env:
-          TARGET_ENV: local
-          BASE_URL: http://localhost:3000
-          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
-          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
+          TEST_TARGET_ENV: local
+          TEST_BASE_URL: http://localhost:3000
+          TEST_ROLE_MEMBER_USERNAME: ${{ secrets.TEST_ROLE_MEMBER_USERNAME }}
+          TEST_ROLE_MEMBER_PASSWORD: ${{ secrets.TEST_ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -168,15 +187,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # setup as in tests.yml; install all browsers: playwright install --with-deps
-      # Python: pytest -m regression --browser chromium --browser firefox --browser webkit
-      #         then: pytest tests/e2e -m regression --device "Pixel 7"
+      # Python: uv run pytest -m regression -n auto --browser chromium --browser firefox --browser webkit
+      #         then: uv run pytest tests/e2e -m regression -n auto --device "Pixel 7"
       # TS:     npx playwright test   (all projects: api, chromium, firefox, webkit, mobile)
       - run: <full regression command for the stack, from above>
         env:
-          TARGET_ENV: staging
-          BASE_URL: ${{ vars.STAGING_URL }}
-          ROLE_MEMBER_USERNAME: ${{ secrets.STAGING_ROLE_MEMBER_USERNAME }}
-          ROLE_MEMBER_PASSWORD: ${{ secrets.STAGING_ROLE_MEMBER_PASSWORD }}
+          TEST_TARGET_ENV: staging
+          TEST_BASE_URL: ${{ vars.STAGING_URL }}
+          TEST_ROLE_MEMBER_USERNAME: ${{ secrets.STAGING_ROLE_MEMBER_USERNAME }}
+          TEST_ROLE_MEMBER_PASSWORD: ${{ secrets.STAGING_ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: reports-regression, path: reports/ }
@@ -188,10 +207,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install locust
-      - run: locust -f tests/perf/locustfile.py --host "$BASE_URL" --headless -u 50 -r 5 -t 10m --html reports/perf.html --csv reports/perf
+      - run: locust -f tests/perf/locustfile.py --host "$TEST_BASE_URL" --headless -u 50 -r 5 -t 10m --html reports/perf.html --csv reports/perf
         env:
-          BASE_URL: ${{ vars.STAGING_URL }}
-          API_TOKEN: ${{ secrets.STAGING_API_TOKEN }}
+          TEST_BASE_URL: ${{ vars.STAGING_URL }}
+          TEST_API_TOKEN: ${{ secrets.STAGING_API_TOKEN }}
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: reports-perf, path: reports/ }
@@ -216,8 +235,11 @@ jobs:
       # setup + install
       - run: <smoke command, e.g. pytest -m "smoke and not writes" | npx playwright test --grep @smoke --grep-invert @writes>
         env:
-          TARGET_ENV: production
-          BASE_URL: ${{ vars.PROD_URL }}
+          TEST_TARGET_ENV: production
+          TEST_BASE_URL: ${{ vars.PROD_URL }}
+          TEST_ROLES: smoke
+          TEST_ROLE_SMOKE_USERNAME: ${{ secrets.PROD_SMOKE_USERNAME }}   # dedicated read-only account
+          TEST_ROLE_SMOKE_PASSWORD: ${{ secrets.PROD_SMOKE_PASSWORD }}
 ```
 
 ## 6. Reports

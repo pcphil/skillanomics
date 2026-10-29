@@ -36,13 +36,13 @@ import os
 from uuid import uuid4
 from locust import HttpUser, task, between, events
 
-API_TOKEN = os.environ.get("API_TOKEN", "")
+TEST_API_TOKEN = os.environ.get("TEST_API_TOKEN", "")
 
 class ShopUser(HttpUser):
     wait_time = between(1, 3)
 
     def on_start(self):
-        self.client.headers["Authorization"] = f"Bearer {API_TOKEN}"
+        self.client.headers["Authorization"] = f"Bearer {TEST_API_TOKEN}"
 
     @task(5)
     def browse_products(self):
@@ -90,15 +90,15 @@ def enforce_thresholds(environment, **_kwargs):
 
 ```bash
 # local smoke (headless)
-locust -f tests/perf/locustfile.py --host "$BASE_URL" --headless -u 5 -r 1 -t 1m \
+locust -f tests/perf/locustfile.py --host "$TEST_BASE_URL" --headless -u 5 -r 1 -t 1m \
   --html reports/perf.html --csv reports/perf
 
 # staging load
-locust -f tests/perf/locustfile.py --host "$BASE_URL" --headless -u 200 -r 10 -t 15m \
+locust -f tests/perf/locustfile.py --host "$TEST_BASE_URL" --headless -u 200 -r 10 -t 15m \
   --html reports/perf.html --csv reports/perf
 ```
 
-Before running, check that `$BASE_URL` is a local or staging host. If it resolves to production, stop and tell the user.
+Before running, check that `$TEST_BASE_URL` is a local or staging host. If it resolves to production, stop and tell the user.
 
 ## 6. In CI
 
