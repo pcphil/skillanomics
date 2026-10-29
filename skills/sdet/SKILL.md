@@ -37,7 +37,8 @@ Gather facts before any decision. This phase writes no files.
 3. Read `tests/TESTING.md` if present — it holds this project's agreed strategy and conventions. Follow it over any default in this skill.
 4. Detect CI: files under `.github/workflows/`.
 5. Detect environments: how the app runs locally (scripts, `docker-compose*`, `Makefile`), base URLs and env var names in config or `.env.example`.
-6. Output a short **Assess summary**: stack(s), existing framework (yes/no + runner), conventions to follow, CI present, environments found, and gaps.
+6. Check whether a browser-control tool is available in this agent environment (for example, Playwright MCP).
+7. Output a short **Assess summary**: stack(s), existing framework (yes/no + runner), conventions to follow, CI present, environments found, browser tool (yes/no), and gaps. When no browser tool is found, add one line: "No browser-control tool detected; with one (e.g. Playwright MCP), selector discovery and API capture can run against the live app."
 
 Then decide the route:
 
@@ -73,6 +74,8 @@ Run only the phases the strategy calls for, loading each reference when its phas
 | `[SDET: Perf]` | `references/performance.md` | Locust load profiles, thresholds, safe targets |
 | `[SDET: CI]` | `references/ci-github-actions.md` | GitHub Actions workflow, gating, sharding, report artifacts |
 
+**Live browser exploration:** when a browser-control tool is available and the UI or API phase needs the live app — page-object selectors, captured endpoints and response shapes, or journey mapping for the strategy — load `references/browser-exploration.md` and follow its setup checks before the first navigation. The browser is for scouting; the deliverable is always test code run by the project's runner.
+
 For each test written:
 
 - Carry the case ID from the strategy table into the test name.
@@ -90,6 +93,8 @@ Load `references/verification.md`. A task is done only after Verify passes.
 
 If a test fails for a reason that looks like a real product bug, report it to the user as a finding with the evidence. Keep the test asserting correct behavior.
 
+When an e2e test fails and a browser-control tool is available, reproduce the journey in it to inspect the page, console, and network (`references/browser-exploration.md`, debugging recipe). Confirm the fix by rerunning through the runner.
+
 ## Environment Rules
 
 These hold in every phase:
@@ -99,6 +104,7 @@ These hold in every phase:
 3. Before any run that targets a production URL, ask the user for explicit confirmation, and limit it to read-only smoke tests — no writes, no data creation, no load.
 4. Run performance and load tests only against local or staging targets.
 5. Ask the user before installing dependencies, starting containers, or changing CI configuration that runs on push.
+6. Browser exploration follows the same rules. On production it is read-only navigation, except for a specific write action the user explicitly asks for — state what it will do and get a yes for each one.
 
 ## Rules
 
@@ -128,3 +134,4 @@ Load each only when its phase starts:
 - `references/performance.md` — Locust load tests and thresholds.
 - `references/ci-github-actions.md` — workflows, gating, sharding, artifacts, adapting to other CI.
 - `references/verification.md` — run, prove-fail check, and report format.
+- `references/browser-exploration.md` — live-app scouting with a browser-control tool: selector discovery, journey mapping, API capture, e2e debugging, fallbacks.

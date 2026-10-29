@@ -114,7 +114,7 @@ In order of preference:
 2. `getByLabel`, `getByPlaceholder`, `getByText`.
 3. `getByTestId` / `get_by_test_id` when no accessible name exists — add a `data-testid` to the app and tell the user.
 
-Selectors are drafted from the app's real markup — read the component source or snapshot the page before writing them.
+Selectors are drafted from the app's real markup — read the component source or snapshot the page before writing them. When a browser-control tool is available, take selectors from a live accessibility snapshot (`references/browser-exploration.md`, selector discovery).
 
 ## 4. Synchronization
 

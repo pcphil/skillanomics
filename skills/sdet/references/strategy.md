@@ -115,4 +115,7 @@ Written to `tests/TESTING.md` in the target repo after full-pipeline sign-off. K
 
 ## Risk map
 <High risks → case IDs covering them>
+
+## Journeys & endpoints
+<filled after live browser exploration — format in references/browser-exploration.md>
 ```
