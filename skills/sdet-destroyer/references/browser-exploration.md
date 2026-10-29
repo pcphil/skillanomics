@@ -13,7 +13,7 @@ The browser is for **scouting**. What you find goes into test code that the proj
 ## 2. Login
 
 - **Default:** the user logs in by hand in the visible browser window, then says to continue. The password never enters the transcript.
-- **Dedicated test accounts only:** the agent may type credentials read from environment variables (`E2E_USER`, `E2E_PASSWORD`). Use this only for accounts that exist purely for testing.
+- **Dedicated test accounts only:** the agent may type credentials read from environment variables (`ROLE_<NAME>_USERNAME`, `ROLE_<NAME>_PASSWORD`, the same role registry the test suite uses). Use this only for accounts that exist purely for testing.
 - The automation profile persists sessions between runs; check whether you are already logged in before asking.
 
 ## 3. Rules by environment

@@ -42,8 +42,9 @@ Choose layers per risk, with a one-line rationale each. Default shape is a pyram
 | Concern | Python | JS / TS |
 |---------|--------|---------|
 | Runner | pytest | Vitest (unit/integration), Playwright Test (e2e/API) |
-| HTTP API | httpx + pytest | Playwright `request` fixture or Vitest + `fetch` |
-| Schema | jsonschema / pydantic | ajv / zod |
+| HTTP API | httpx + pytest, via client layer | Playwright `request`, via client layer |
+| Schema | pydantic (generated from OpenAPI when available) | ajv against OpenAPI / JSON Schema |
+| Settings | pydantic-settings + python-dotenv | zod + dotenv |
 | UI / e2e | pytest-playwright | @playwright/test |
 | Data | Faker, factory_boy | @faker-js/faker, factory functions |
 | Containers | testcontainers-python | testcontainers-node |

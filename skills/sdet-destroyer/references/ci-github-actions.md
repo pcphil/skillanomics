@@ -35,7 +35,10 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: pytest tests/unit tests/api -m "not slow" --junitxml=reports/junit-unit-api.xml
         env:
+          TARGET_ENV: local
           BASE_URL: http://localhost:8000
+          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
+          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -55,9 +58,10 @@ jobs:
       - run: <start the app in the background, e.g. docker compose up -d --wait>
       - run: pytest tests/e2e -m smoke --base-url "$BASE_URL" --junitxml=reports/junit-e2e.xml --html=reports/e2e.html --self-contained-html
         env:
+          TARGET_ENV: local
           BASE_URL: http://localhost:8000
-          E2E_USER: ${{ secrets.E2E_USER }}
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
+          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,6 +100,27 @@ jobs:
           name: reports-unit
           path: reports/
 
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright test --project=api   # request-only: no browser install needed
+        env:
+          TARGET_ENV: local
+          BASE_URL: http://localhost:3000
+          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
+          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reports-api
+          path: reports/
+
   e2e-smoke:
     runs-on: ubuntu-latest
     strategy:
@@ -110,11 +135,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --grep @smoke --shard ${{ matrix.shard }}
+      - run: npx playwright test --project=chromium --grep @smoke --shard ${{ matrix.shard }}
         env:
+          TARGET_ENV: local
           BASE_URL: http://localhost:3000
-          E2E_USER: ${{ secrets.E2E_USER }}
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          ROLE_MEMBER_USERNAME: ${{ secrets.ROLE_MEMBER_USERNAME }}
+          ROLE_MEMBER_PASSWORD: ${{ secrets.ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -141,10 +167,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # setup + install as in tests.yml
-      - run: <full regression command, e.g. pytest -m regression | npx playwright test>
+      # setup as in tests.yml; install all browsers: playwright install --with-deps
+      # Python: pytest -m regression --browser chromium --browser firefox --browser webkit
+      #         then: pytest tests/e2e -m regression --device "Pixel 7"
+      # TS:     npx playwright test   (all projects: api, chromium, firefox, webkit, mobile)
+      - run: <full regression command for the stack, from above>
         env:
+          TARGET_ENV: staging
           BASE_URL: ${{ vars.STAGING_URL }}
+          ROLE_MEMBER_USERNAME: ${{ secrets.STAGING_ROLE_MEMBER_USERNAME }}
+          ROLE_MEMBER_PASSWORD: ${{ secrets.STAGING_ROLE_MEMBER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: reports-regression, path: reports/ }

@@ -39,7 +39,7 @@ End the phase with a short report:
 Added / changed: 12 tests (U-01..U-06, I-10..I-13, E-01, E-02)
 Run: 12 passed, 0 failed (2 consecutive runs)
 Prove-fail: U-01, I-10, I-11, E-01 — each failed on the broken assertion, green after restore
-Not verified: E-02 — needs staging credentials (E2E_USER not set)
+Not verified: E-02 — needs staging credentials (ROLE_MEMBER_USERNAME missing for staging)
 Findings: I-12 — PATCH /orders/{id} returns 500 for qty=0; expected 422. Evidence: response body below.
 Run commands:
   pytest tests/unit tests/api

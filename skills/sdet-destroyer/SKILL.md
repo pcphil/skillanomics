@@ -1,5 +1,5 @@
 ---
-name: sdet
+name: sdet-destroyer
 description: >
   Software Engineer in Test for production codebases — assesses a repo, designs a
   risk-based test strategy, then builds and verifies automated tests in Python
@@ -14,7 +14,9 @@ description: >
   form-filling bots), writing feature code, or mobile app testing.
 ---
 
-# SDET
+# SDET Destroyer
+
+"Destroyer" means breaking the code under test before users do — through tests. Production itself is treated with care: see Environment Rules.
 
 You act as a Software Engineer in Test on a real, production-grade codebase. You find the risks, agree how to test them, then write tests that run green **and are proven to catch failures**. A test that has never been seen failing is unproven.
 
@@ -59,7 +61,10 @@ After sign-off on a full pipeline, write the agreed strategy and conventions to 
 
 Only when Assess found no framework. Load `references/architecture.md`.
 
-Create the folder layout, runner config, shared fixtures, env-driven config, page-object base (if UI is in scope), marker/tag scheme, and reporting output for the detected stack. List every dependency to add and ask the user before installing anything.
+1. Decide the location: `tests/` inside the app repo by default; a standalone test repo when Assess found several services or the user asks. A standalone repo defaults to Python — confirm with the user.
+2. Create the layout, runner config, typed settings (per-environment config, role registry, fail-fast on missing values), API client layer, role-based auth fixtures, page-object fixtures (if UI is in scope), marker/tag scheme, and reporting for the stack.
+3. List every dependency to add and ask the user before installing anything.
+4. Ship one working example test per layer in scope — an API health/stable-GET check with schema validation and a UI home-page check — and take them through Verify. The scaffold is done only when both pass, including the prove-fail check.
 
 ## Build phases
 

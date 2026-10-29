@@ -15,6 +15,7 @@ A personalized skill registry for coding agents — reusable agent skills design
 | `web-automation` | Writes Python Playwright scripts for browser automation — forms, auth flows, pagination, multi-tab |
 | `sdet-test-auditor` | Audits test suites for quality and coverage gaps |
 | `sdet-test-builder` | Generates test scaffolding and test cases |
+| `sdet-destroyer` | SDET for production codebases — assesses, strategizes, scaffolds, builds and verifies UI/API/unit/perf tests with CI (Python + JS/TS) |
 
 ## Design Considerations
 

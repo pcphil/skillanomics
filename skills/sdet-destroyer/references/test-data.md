@@ -59,13 +59,13 @@ import pytest
 from tests.factories.user import user_payload
 
 @pytest.fixture
-def user(api):
-    resp = api.post("/users", json=user_payload())
-    assert resp.status_code == 201
-    created = resp.json()
+def user(admin_api):
+    created = admin_api.users.create_ok(user_payload())  # asserts 2xx + schema, returns the model
     yield created
-    api.delete(f"/users/{created['id']}")
+    admin_api.users.delete(created.id)
 ```
+
+Fixtures create data through the API client layer (`references/api.md`), so setup failures surface at the setup line with the status and body.
 
 ### TS (@faker-js/faker)
 
@@ -87,13 +87,12 @@ export function userPayload(overrides: Partial<UserInput> = {}): UserInput {
 ```
 
 ```ts
-// tests/e2e/fixtures.ts (excerpt) — Playwright fixture with teardown
-export const test = base.extend<{ user: User }>({
-  user: async ({ request }, use) => {
-    const res = await request.post("/users", { data: userPayload() });
-    const user = await res.json();
+// tests/e2e/fixtures.ts (excerpt) — Playwright fixture with teardown, built on the API fixtures
+export const test = apiTest.extend<{ user: User }>({
+  user: async ({ adminApi }, use) => {
+    const user = await adminApi.users.createOk(userPayload());
     await use(user);
-    await request.delete(`/users/${user.id}`);
+    await adminApi.users.delete(user.id);
   },
 });
 ```
