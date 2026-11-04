@@ -123,6 +123,8 @@ These hold in every phase:
 4. Give each test its own data and clean it up; tests pass in any order and in parallel.
 5. Wait on conditions and web-first assertions; fixed sleeps are never the fix.
 6. Finish every task with Verify, including the prove-fail check.
+7. When asking the user to decide, number each question, list lettered options with the recommended one first and marked **(Recommended)**, and give a one-line reason grounded in Assess findings. Word each question so "yes" accepts the recommendation. Ask every independent question in one round; hold back only questions whose answer depends on one still open. Use the platform's multiple-choice prompt when one is available.
+   Give no default for production runs, production writes during browser exploration, vendor load-test approval (Environment Rules 3, 4, 6), or the code-location question: state the facts and the risk, and say why no recommendation is given.
 
 ## Boundaries
 
