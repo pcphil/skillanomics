@@ -11,7 +11,7 @@ This applies at multiple scales:
 
 ## Why it happens
 
-Transformer attention is theoretically global, but in practice trained models exhibit a U-shaped recall curve when tested on long inputs. The phenomenon was documented empirically in "Lost in the Middle: How Language Models Use Long Contexts" (Liu et al., 2023). The effect is stronger with longer inputs and intensifies as context window usage approaches its limit.
+Transformer attention is theoretically global, but in practice trained models exhibit a U-shaped recall curve when tested on long inputs. The phenomenon was documented empirically in "Lost in the Middle: How Language Models Use Long Contexts" (Liu et al., 2023). That study tested 2023-era models; newer long-context models do much better on simple needle-retrieval tests. What persists is broader degradation as context grows: "Context Rot: How Increasing Input Tokens Impacts LLM Performance" (Chroma, 2025) tested 18 models including Claude 4, GPT-4.1, and Gemini 2.5 and found performance becomes less reliable with every increase in input length — well before the context limit — and worsens with distractors and semantically similar content. Treat the U-curve as a directional risk, not a precise map.
 
 Likely causes:
 - Training data rarely requires retrieving facts from the exact middle of long documents
@@ -20,7 +20,9 @@ Likely causes:
 
 ## List-Level Effects (Primacy-Recency Bias)
 
-The same U-shaped attention curve operates at micro-scale within individual lists:
+This section extrapolates the long-context finding down to short lists. It is a design heuristic, not a measured result — but it's cheap to follow and matches how humans write priorities.
+
+The same U-shaped pattern is assumed to operate at micro-scale within individual lists:
 
 **Primacy bias** — the first item in a list is processed when the model's attention is fully available and the context is least cluttered. It anchors how the rest of the list is interpreted.
 
@@ -31,7 +33,7 @@ Items 2 through N-1 in a list compete with each other in the attention-poor midd
 This means for any list of rules, workflow steps, or requirements:
 - 3-item lists have no middle zone
 - 5-item lists have a small one
-- 10-item lists have a large dead zone where items are unreliably followed
+- 10-item lists have a large middle zone where items are more likely to be skipped
 
 ## Analogy
 

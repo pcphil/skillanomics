@@ -12,24 +12,19 @@
 - Why portability matters even if you only use one agent today
 
 1.2 **The Agent Interface Landscape**
-- Common interfaces: system prompts, tool declarations, context injection, file-based rules
-- Claude Code: SKILL.md + references/ + scripts/ + assets/
-- Cursor: `.cursor/rules/*.mdc` (MDC format with frontmatter) or legacy `.cursorrules`
-- Windsurf: `.windsurfrules` (plain markdown, always loaded)
-- Copilot: `.github/copilot-instructions.md` (always loaded, no trigger matching)
-- Aider: `CONVENTIONS.md` + files listed in `.aider.conf.yml`
-- OpenCode: SKILL.md (same structure as Claude Code, different discovery paths)
-- What they share vs. where they diverge
+- Two file kinds: skills (`SKILL.md`, Agent Skills open standard) and rules/instruction files (per-tool, plus `AGENTS.md`)
+- SKILL.md readers: Claude Code, GitHub Copilot, Cursor, Windsurf (Devin Desktop), OpenCode, and others
+- Rules: `.cursor/rules/*.mdc`, `.windsurf/rules/*.md`, `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`, `CONVENTIONS.md` (Aider)
+- What they share vs. where they diverge; verify against vendor docs, they change fast
 
-1.3 **Universal Core, Platform Wrapper**
-- Pattern: write the "brain" once, wrap it per platform
-- What belongs in the universal core (intent, logic, criteria, examples)
-- What belongs in the wrapper (trigger syntax, file format, tool references, platform-specific features)
-- Example: a code review skill expressed for 3 platforms
+1.3 **Universal Core, Thin Wrapper**
+- Pattern: write the core once as a standard SKILL.md, adapt only where a tool lacks skills
+- What belongs in the SKILL.md (name, description, workflow, references) vs. an adapter (condensed rules file, platform features with fallbacks)
+- Example: a code review skill as SKILL.md plus a condensed CONVENTIONS.md for Aider
 
 1.4 **Mapping Between Platforms**
-- Translation table: Claude Code concepts → equivalents on each platform
-- Handling capabilities that don't exist on all platforms (progressive disclosure, memory, trigger matching)
+- Translation table: SKILL.md concepts vs. rules-file equivalents
+- Handling capabilities that don't exist everywhere (memory, file-scoped activation, extension frontmatter fields)
 - Graceful degradation vs. platform-specific branches
 
 1.5 **Anti-Patterns**
@@ -39,61 +34,57 @@
 - Over-engineering portability for a single-platform skill
 
 ### Exercise
-Take an existing Claude Code skill and extract its universal core. Write a 1-paragraph "portability brief" describing how it could adapt to Cursor.
+Take an existing Claude Code skill and list which frontmatter fields are standard and which are extensions. Write a 1-paragraph "portability brief" describing what it needs to run on Aider.
 
 ---
 
 ## Module 2: Platform-Native Formats
 
-**Goal:** Master the correct file format, structure, and capabilities for each platform.
+**Goal:** Master the Agent Skills standard and each platform's rules-file format and capabilities.
 
 ### Lessons
 
-2.1 **Claude Code: SKILL.md**
-- Frontmatter: `name` and `description` only (no `globs`, `tags`, or other fields)
-- Description drives trigger matching — write it as a discrimination signal
+2.1 **Agent Skills Standard: SKILL.md**
+- Required: `name` (max 64 chars, lowercase, hyphens, matches directory) and `description` (max 1024 chars)
+- Optional standard fields: `license`, `compatibility`, `metadata`, `allowed-tools`
 - Directory layout: SKILL.md + references/ + scripts/ + assets/
-- Progressive disclosure: always-loaded (SKILL.md) → on-demand (references/) → copy-only (assets/)
-- Memory system for state persistence across sessions
-- Named tools (Read, Grep, Glob, Edit, Write, Bash)
+- Progressive disclosure: metadata at startup, body on activation, resources on demand
+- Description drives trigger matching: write it as a discrimination signal, with negative triggers
 
-2.2 **Cursor: MDC Rules**
-- File location: `.cursor/rules/skill-name.mdc`
-- Frontmatter: `description`, `globs` (file patterns for auto-attach), `alwaysApply`
-- Context variables: `{{REPO_ROOT}}`, `{{CURRENT_FILE}}`, `{{SELECTION}}`
-- Body structure: Activation Boundaries → Context & Objective → Workflow → Constraints
-- Legacy format: `.cursorrules` (plain markdown, no frontmatter)
+2.2 **Claude Code Extensions**
+- Extra frontmatter: `when_to_use`, `disable-model-invocation`, `user-invocable`, `allowed-tools`, `context: fork`, `paths`, `hooks`, `model`, `effort`, and more
+- Extensions work in Claude Code; claude.ai uploads and strict standard validators accept only the standard fields
+- Memory system for state persistence; slash-command invocation; string substitutions
+- Description plus `when_to_use` capped at 1,536 characters
 
-2.3 **Windsurf: .windsurfrules**
-- Plain markdown, no frontmatter, no context variables
-- Always loaded for every session — keep concise (<150 lines)
-- Cascade hierarchy: global user rules → project rules → in-chat instructions
-- Structure: Role → Stack → Workflow → Always/Never → Out of Scope
+2.3 **Cursor: Skills and Rules**
+- Skills in `.cursor/skills/` or `.agents/skills/`; `disable-model-invocation` turns a skill into a slash command
+- Rules: `.cursor/rules/*.mdc` with `description`, `globs`, `alwaysApply`; four types (always, intelligent, file-scoped, manual)
+- `AGENTS.md` as a plain alternative; rules under 500 lines
 
-2.4 **Copilot: Instructions File**
-- File: `.github/copilot-instructions.md`
-- Always loaded, no activation boundaries, no trigger matching
-- Suggestion-based, not agentic — no multi-step workflows
-- Focus on conventions, patterns, and constraints
-- Keep under 100 lines (competes with open files for context)
+2.4 **Windsurf (Devin Desktop): Skills and Rules**
+- Skills in `.devin/skills/`; rules in `.devin/rules/*.md` or `.windsurf/rules/*.md`
+- Rule `trigger:` modes: `always_on`, `model_decision`, `glob`, `manual`; 12,000-character limit per rule file
+- Use skills for multi-step work with supporting files; rules for short behavioral guidance
 
-2.5 **Aider: Conventions**
-- File: `CONVENTIONS.md` in project root, or files listed in `.aider.conf.yml`
-- Plain markdown, no frontmatter, loaded every session
-- Write for a developer scanning quickly, not an agent parsing steps
-- Deep git integration — include commit conventions
-- Keep under 200 lines
+2.5 **GitHub Copilot: Skills and Instructions**
+- Skills in `.github/skills/` (also reads `.claude/skills/`, `.agents/skills/`)
+- Instructions: `.github/copilot-instructions.md`, path-scoped `.github/instructions/*.instructions.md` with `applyTo`, and `AGENTS.md`
+- Keep instructions to about 2 pages
 
-2.6 **OpenCode: SKILL.md**
-- Nearly identical to Claude Code format (same directory structure)
-- Extra optional frontmatter: `license`, `compatibility`, `metadata`
-- Permission system: `allow`/`deny`/`ask` in `opencode.json`
-- Use intent-based language (tool names differ from Claude Code)
+2.6 **Aider: Conventions**
+- `CONVENTIONS.md` loaded with `--read` or `read:` in `.aider.conf.yml` (read-only, cacheable)
+- Plain markdown; no skills support found in its docs; keep it lean
 
-2.7 **What's Truly Universal vs. Platform-Specific**
-- Universal: name/identifier, description/purpose, workflow steps, constraints, boundaries
-- Platform-specific: `globs` (Cursor), `alwaysApply` (Cursor), context variables (Cursor), memory system (Claude Code), progressive disclosure (Claude Code/OpenCode), permission system (OpenCode)
-- When to use platform-specific features vs. when to stay portable
+2.7 **OpenCode: SKILL.md**
+- Same skill format; searches `.opencode/skills/`, `.claude/skills/`, `.agents/skills/`
+- `name` must match the directory; permission system (`allow`/`deny`/`ask`) in `opencode.json`
+- Use intent-based language (tool names differ)
+
+2.8 **What's Truly Universal vs. Platform-Specific**
+- Universal: `name`, `description`, workflow steps, constraints, boundaries, `references/`
+- Platform-specific: Claude Code extension fields and memory, per-tool rule triggers (`globs`, `applyTo`, `trigger:`), permission systems
+- When to use platform-specific features vs. when to stay on the standard
 
 ### Exercise
 Create a skill for a platform you use. Then describe what would change to port it to a second platform.

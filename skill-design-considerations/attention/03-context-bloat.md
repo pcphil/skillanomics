@@ -40,7 +40,10 @@ Imagine packing every item you own into one suitcase "just in case." At the airp
 This is the core fix. Organize skill content into tiers based on when it's actually needed:
 
 ```
-Tier 1 — Always loaded (frontmatter + SKILL.md): 50–150 lines
+Tier 0 — Always loaded (frontmatter name + description only): ~100 tokens per skill
+  Trigger matching — every installed skill pays this cost in every session
+
+Tier 1 — Loaded on activation (SKILL.md body): 50–150 lines
   Core workflow, top-level constraints, references to tier 2
 
 Tier 2 — Loaded on demand (references/): loaded when a specific subtask requires it
@@ -50,7 +53,7 @@ Tier 3 — Not loaded into context (assets/): used by the model as templates to 
   Boilerplate files, starter templates, full examples
 ```
 
-The model loads tier 2 only when it determines it needs the detail. It copies from tier 3 without the template text entering context.
+Only tier 0 is resident before the skill fires; the SKILL.md body enters context when the agent decides to activate the skill. The model loads tier 2 only when it determines it needs the detail. It copies from tier 3 without the template text entering context.
 
 **Lines as a token proxy:**
 
@@ -69,9 +72,9 @@ A 150-line SKILL.md of mixed content is roughly 1,000–2,500 tokens. For precis
 |------|----------------|--------------------|
 | Simple one-task skill | 30–80 lines | ~300–800 tokens |
 | Multi-step workflow skill | 80–150 lines | ~800–2,000 tokens |
-| Complex orchestrator skill | 150–250 lines (absolute max) | ~2,000–4,000 tokens |
+| Complex orchestrator skill | 150–250 lines | ~2,000–4,000 tokens |
 
-If your SKILL.md exceeds 250 lines (roughly 4,000 tokens), content needs to move to references/.
+These targets are this guide's house style, deliberately stricter than the standard. The Agent Skills spec sets the outer bound: keep SKILL.md under 500 lines and under ~5,000 tokens. Past 250 lines, treat it as a signal to move content to references/; past 500, it's out of spec.
 
 **What belongs in SKILL.md vs references/:**
 

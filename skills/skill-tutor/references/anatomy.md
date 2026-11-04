@@ -257,11 +257,11 @@ State which reference to load at each workflow step. Example from learn-python: 
 
 | Platform | Target | Hard Max | Notes |
 |----------|--------|----------|-------|
-| Claude Code | 150 lines | 500 lines | Progressive disclosure offloads detail |
-| Windsurf | 100 lines | 150 lines | Always loaded, no progressive disclosure |
-| Copilot | 80 lines | 100 lines | Competes with open files for context |
-| Aider | 150 lines | 200 lines | All listed files loaded every session |
-| Cursor | 150 lines | 200 lines | Per-rule; auto-attached by globs |
+| SKILL.md (Claude Code, Cursor, Copilot, Windsurf, OpenCode) | 150 lines | 500 lines | Agent Skills spec; instructions under about 5,000 tokens; progressive disclosure offloads detail |
+| Cursor rules (`.mdc`) | 150 lines | 500 lines | Per-rule, from Cursor docs |
+| Windsurf rules | 100 lines | 12,000 characters per file | Enforced limit in Devin/Windsurf docs |
+| Copilot instructions | 80 lines | about 2 pages | GitHub docs guidance |
+| Aider conventions | 100 lines | no documented limit | Loaded read-only and cached; keep lean |
 
 ### Reference Files
 

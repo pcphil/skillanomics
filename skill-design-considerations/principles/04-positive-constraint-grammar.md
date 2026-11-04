@@ -2,7 +2,7 @@
 
 ## What it is
 
-Every constraint in a skill should be expressed as what to do, not what not to do. "Confirm platform before generating" is reliable. "Don't generate without knowing the platform" is not. The positive form gives the model a concrete action to take. The negative form gives the model a concept to suppress — which is a harder cognitive operation and one that fails under pressure.
+Every constraint in a skill should be expressed as what to do, not what not to do. "Confirm platform before generating" names the action. "Don't generate without knowing the platform" only names what to avoid. The positive form gives the model a concrete action to take; the negative form leaves the model to infer the right action, and is followed less dependably under ambiguity or in long contexts.
 
 This principle operationalizes negation-failure (grounding/01) as a writing rule: apply it during authoring, not just as a retrospective fix.
 
@@ -12,7 +12,7 @@ Negative constraints have two failure modes:
 1. **Suppression failure** — the model generates the prohibited thing anyway, especially in ambiguous conditions or long contexts
 2. **Gap failure** — "don't do X" leaves the correct behavior undefined; the model fills the gap with its default, which may be exactly X
 
-Positive constraints eliminate both failure modes: the model has a concrete target behavior, and the gap between "what to do" and "what not to do" disappears.
+Positive constraints sharply reduce both failure modes: the model has a concrete target behavior, and the gap between "what to do" and "what not to do" disappears.
 
 Beyond reliability: positive constraints are also easier to read and audit. A constraint audit should be able to confirm "the model knows what to do in this case" — not just "the model knows what to avoid."
 
@@ -26,7 +26,7 @@ Read through the Rules, Constraints, and Boundaries sections of the skill. For e
 
 **Rewrite table:**
 
-| Negative (unreliable) | Positive (reliable) |
+| Negative (weaker) | Positive (stronger) |
 |-----------------------|---------------------|
 | Don't generate without knowing the platform | Confirm platform before generating |
 | Never use tool names in platform-portable skills | Use intent-based language ("search the codebase") |

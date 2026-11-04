@@ -40,10 +40,13 @@ Before finalizing a skill, list every capability it depends on and verify each i
 
 | Capability | Claude Code | OpenCode | Cursor | Copilot | Aider |
 |------------|-------------|----------|--------|---------|-------|
-| Persistent agent memory | Yes | Verify | Verify | No | No |
-| File read/write tools | Yes | Yes | Limited | Limited | Yes |
-| Slash commands | Yes | Verify | Verify | No | Verify |
-| Structured question UI | Yes | No | No | No | No |
+| Reads SKILL.md (Agent Skills standard) | Yes | Yes | Yes | Yes | No |
+| Persistent agent memory | Yes | Verify | Verify | Verify | No |
+| File read/write tools | Yes | Yes | Verify | Verify | Yes |
+| Slash commands | Yes | Verify | Verify | Verify | Verify |
+| Structured question UI | Yes | Verify | Verify | Verify | No |
+
+SKILL.md is now read natively by many agents beyond these columns — Codex, Gemini CLI, Windsurf, Cline, Antigravity, and others — each from its own skills directory (e.g. `.codex/skills/`, `.cursor/skills/`, `.github/skills/`, `.opencode/skills/`, `.windsurf/skills/`). Shared file format does not mean shared capabilities: the rows below the first still differ per platform and change often, which is why most cells say Verify.
 
 **Use intent-based language for tools:**
 
@@ -69,13 +72,17 @@ If not: summarize current state in each response so the user can resume manually
 
 **Declare platform requirements explicitly:**
 
-If a skill genuinely requires a platform-specific feature and cannot degrade gracefully, say so at the top:
+If a skill genuinely requires a platform-specific feature and cannot degrade gracefully, declare it in the `compatibility` frontmatter field (Agent Skills spec, max 500 characters) so installers and human readers can see it:
 
-```markdown
-**Requires:** Claude Code with memory enabled. Not compatible with stateless agents.
+```yaml
+---
+name: my-skill
+description: ...
+compatibility: Requires Claude Code with memory enabled. Not compatible with stateless agents.
+---
 ```
 
-This is better than silently failing.
+Agents load only `name` and `description` before activation, so the model may never read `compatibility`. Also state the requirement at the top of the body, with what to tell the user when it's missing — that's the copy the model acts on. Both are better than silently failing. Most skills need no `compatibility` field — reserve it for hard requirements.
 
 **Test on the lowest-capability target:**
 

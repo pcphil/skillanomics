@@ -23,7 +23,7 @@ Meeting notes taken by a summarizer who wasn't told which decisions matter. The 
 - Skill re-asks questions the user already answered earlier in the conversation
 - Output in later steps contradicts decisions made in earlier steps (the decision was compacted away)
 - Multi-step workflow produces inconsistent results across steps — each step generates fresh assumptions
-- Skill works correctly in short conversations but degrades in sessions exceeding ~30 turns
+- Skill works correctly in short conversations but degrades after the first compaction — compaction triggers on token usage, not turn count, so a few turns with large tool outputs can trigger it as easily as many short ones
 - User says "I already told you that" — because they did, but the information was compacted
 
 ## Fix

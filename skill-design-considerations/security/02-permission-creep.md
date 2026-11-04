@@ -62,6 +62,20 @@ State what the skill needs and why, at the top of the file:
 Does not require: shell execution, network access, or access outside the skill directory.
 ```
 
+**Keep `allowed-tools` narrow:**
+
+The Agent Skills spec defines an optional `allowed-tools` frontmatter field: a space-separated list of tools the skill may run without asking the user for approval each time. It is a pre-approval list, not a sandbox — on platforms that honor it, every entry removes a confirmation prompt. So least privilege applies directly: pre-approve only what the core function needs, scoped as tightly as the platform's syntax allows.
+
+```yaml
+# Broad (bad) — pre-approves any shell command
+allowed-tools: Bash Read Write
+
+# Scoped (good) — only the commands the workflow actually runs
+allowed-tools: Bash(git diff:*) Bash(git log:*) Read
+```
+
+The field is marked experimental and support varies by agent; tool names inside it are platform-specific. Treat it as a platform-specific optimization on top of the declared-capabilities section above, not a replacement for it.
+
 **Escalate permissions progressively, not preemptively:**
 
 Start with the minimum. If a step turns out to need more, request it at that step — not upfront "just in case":

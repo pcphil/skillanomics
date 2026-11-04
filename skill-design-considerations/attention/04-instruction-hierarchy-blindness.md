@@ -22,7 +22,7 @@ A new employee writes a detailed process guide for how to handle customer calls.
 - Formatting, tone, or workflow instructions from the skill are ignored — user's CLAUDE.md has a conflicting rule
 - Skill's constraints are overridden when the user phrases a message as a strong imperative ("just do it, no questions")
 - Skill works in one user's environment but not another's (different system prompts)
-- Adding "IMPORTANT" or "REQUIRED" in the skill temporarily works but isn't reliable
+- "IMPORTANT" or "REQUIRED" in caps gets added to win conflicts — this doesn't change the skill's position in the stack, and on recent Claude models (per Anthropic's prompting guidance) it tends to cause overtriggering (the rule fires in cases it wasn't meant for)
 
 ## Fix
 
@@ -33,6 +33,8 @@ Assume this rough precedence (most authoritative to least), noting the last item
 2. User config (CLAUDE.md, settings)
 3. Active skill (you)
 4. User message (below the system prompt by design, but recency often makes it win in practice — don't assume the skill outranks it)
+
+This is a practical ordering, not how the content is delivered. In Claude Code, for example, CLAUDE.md is injected as user-turn context rather than system prompt, and a skill body enters mid-conversation only when the skill activates. An explicit, direct user instruction usually wins over a skill. Treat the list as "who tends to win a conflict," and verify on each target platform.
 
 Design the skill to function within this hierarchy, not above it.
 
