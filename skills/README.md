@@ -35,8 +35,8 @@ Copy or symlink a skill directory into `~/.agents/skills/` (or `.claude/skills/`
 | [learn-typescript](learn-typescript/) | Guided TypeScript learning — type system fundamentals through generics to advanced types. Teaches via Concept → Analogy → Workshop loop, with each workshop verified by `tsc --noEmit --strict`. |
 | [learn-dsa](learn-dsa/) | Guided Data Structures & Algorithms in Python — Big-O through graphs. Teaches via Concept → Analogy → Workshop loop with LeetCode-style problems. |
 | [skill-tutor](skill-tutor/) | Teaches how to build optimal, portable agent skills. Tutor, Reviewer, and Librarian modes. |
-| [skill-creator-agnostic](skill-creator-agnostic/) | Scaffolds new skills as standard SKILL.md (Claude Code, Copilot, Cursor, Windsurf, OpenCode) or native rules files (Cursor, Windsurf, Copilot, Aider). |
-| [inspiration](inspiration/) | Brainstorming partner that grills you like a product manager and scans an existing codebase (app, web, or API) for evidence-backed quality-of-life ideas and new feature opportunities, ending with a user-approved spec. |
+| [skill-creator-agnostic](skill-creator-agnostic/) | Scaffolds new skills from templates for Claude Code, Cursor, Copilot, and other agents. |
+| [make-no-mistakes](make-no-mistakes/) | Spec-conformance gate — captures a signed-off requirement checklist before work, then verifies the result against it with cited evidence. Checks both directions: every requirement met, and every change asked for. |
 
 ## Best Practices
 
