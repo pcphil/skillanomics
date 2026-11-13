@@ -36,6 +36,7 @@ Copy or symlink a skill directory into `~/.agents/skills/` (or `.claude/skills/`
 | [learn-dsa](learn-dsa/) | Guided Data Structures & Algorithms in Python — Big-O through graphs. Teaches via Concept → Analogy → Workshop loop with LeetCode-style problems. |
 | [skill-tutor](skill-tutor/) | Teaches how to build optimal, portable agent skills. Tutor, Reviewer, and Librarian modes. |
 | [skill-creator-agnostic](skill-creator-agnostic/) | Scaffolds new skills from templates for Claude Code, Cursor, Copilot, and other agents. |
+| [sdet-destroyer](sdet-destroyer/) | Software Engineer in Test for production codebases — assesses a repo, agrees a risk-based strategy, then scaffolds and verifies UI/e2e, API, unit, performance, and CI tests in Python (pytest, Playwright, httpx) or JS/TS (Playwright, Vitest). |
 | [make-no-mistakes](make-no-mistakes/) | Spec-conformance gate — captures a signed-off requirement checklist before work, then verifies the result against it with cited evidence. Checks both directions: every requirement met, and every change asked for. |
 
 ## Best Practices

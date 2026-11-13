@@ -251,6 +251,36 @@ Never depend on data someone created by hand in staging.
 
 - **Accessibility:** `@axe-core/playwright` / `axe-playwright-python` on key screens; fail on new serious/critical violations.
 - **Visual regression:** `toHaveScreenshot()` with committed baselines and masked dynamic regions. Gate selectively — rendering differs across OS.
+- **Client-side validation blocks the request:** for rows like "empty submit is rejected in the browser", assert the error is shown *and* no request reached the server. Seeing the message alone passes even when the server did the rejecting.
+
+```python
+# E-05 empty login submit is blocked client-side
+def test_e05_empty_submit_blocked(login_page):
+    posted = []
+
+    def record_login_post(request):
+        if request.method == "POST" and "/login" in request.url:
+            posted.append(request.url)
+
+    login_page.open()
+    login_page.page.on("request", record_login_post)
+    login_page.submit.click()
+    expect(login_page.page.get_by_text("required")).to_be_visible()
+    assert posted == []
+```
+
+```ts
+test("E-05 empty login submit is blocked client-side", async ({ loginPage }) => {
+  const posted: string[] = [];
+  await loginPage.open();
+  loginPage.page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().includes("/login")) posted.push(r.url());
+  });
+  await loginPage.submit.click();
+  await expect(loginPage.page.getByText(/required/i)).toBeVisible();
+  expect(posted).toEqual([]);
+});
+```
 
 ## 9. Discipline
 
