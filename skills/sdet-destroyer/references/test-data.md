@@ -128,8 +128,8 @@ def database_server(env_settings, worker_id):
             "(docker compose up -d db, or a CI service container) and export its URL"
         )
     from testcontainers.postgres import PostgresContainer
-    with PostgresContainer("postgres:16-alpine") as pg:
-        yield pg.get_connection_url()
+    with PostgresContainer("postgres:16-alpine", driver="psycopg") as pg:
+        yield pg.get_connection_url()  # postgresql+psycopg://…
 
 @pytest.fixture(scope="session")
 def engine(database_server, worker_id):

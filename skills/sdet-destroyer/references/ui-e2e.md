@@ -178,7 +178,7 @@ import { test as setup } from "@playwright/test";
 import { credentials, roleNames, settings } from "../settings";
 
 for (const role of roleNames) {
-  setup(`authenticate as ${role}`, async ({ request }) => {
+  setup(`authenticate as ${role} @smoke`, async ({ request }) => {
     const res = await request.post(`${settings.apiBase}/auth/login`, { data: credentials(role) });
     if (!res.ok()) throw new Error(`login failed for role ${role}: ${res.status()}`);
     await request.storageState({ path: `tests/.auth/${role}.json` }); // standalone: .auth/
@@ -194,6 +194,8 @@ storageState: path.join(authDir, `${settings.defaultRole}.json`), // authDir = t
 test.use({ storageState: path.resolve("tests/.auth/admin.json") });          // as admin
 test.use({ storageState: { cookies: [], origins: [] } }); // anonymous
 ```
+
+Setup titles carry `@smoke` so the production `@smoke` filter (config `grep` or CLI `--grep`) keeps them; without it, no storage state gets written and every authenticated e2e test fails.
 
 `tests/.auth/` holds live session cookies — keep it git-ignored.
 

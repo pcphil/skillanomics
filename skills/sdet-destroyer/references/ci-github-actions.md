@@ -41,7 +41,7 @@ jobs:
       - run: uv sync --group test
       - run: uv run pytest tests/unit tests/integration -n auto -m "not slow" --junitxml=tests/reports/junit-unit.xml
         env:
-          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -130,6 +130,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: <start the app in the background, e.g. docker compose up -d --wait>
       - run: npx playwright test -c tests/playwright.config.ts --project=api   # request-only: no browser install needed
         env:
           TEST_TARGET_ENV: local

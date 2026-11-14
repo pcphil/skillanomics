@@ -70,7 +70,7 @@ class ShopUser(HttpUser):
 
 ## 4. Thresholds as pass/fail
 
-Locust exits 0 by default even when slow. Fail the run when thresholds break:
+By default Locust exits 1 when any request failed and 0 otherwise, so a slow run passes and a 0.1% error rate fails. Replace that default with explicit thresholds — the listener sets the exit code on every path:
 
 ```python
 # tests/perf/locustfile.py (continued)
@@ -86,6 +86,8 @@ def enforce_thresholds(environment, **_kwargs):
     elif total.get_response_time_percentile(0.95) > P95_MS:
         environment.process_exit_code = 1
         print(f"FAIL: p95 {total.get_response_time_percentile(0.95)} ms > {P95_MS} ms")
+    else:
+        environment.process_exit_code = 0
 ```
 
 ## 5. Running

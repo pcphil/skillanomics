@@ -323,6 +323,8 @@ test = [
   "factory-boy",
   "testcontainers[postgres]", # integration needs a real DB
   "sqlalchemy",               # per-worker database setup
+  "psycopg[binary]",          # Postgres driver; use the app's own driver if it has one
+  "locust",                   # perf in scope
 ]
 
 # only when the repo has no pytest config (§2 rule 3); otherwise add the markers to the existing one

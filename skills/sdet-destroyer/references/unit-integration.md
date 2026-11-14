@@ -58,13 +58,21 @@ Prefer the framework's own test client when it exists — it exercises routing, 
 
 ```python
 # FastAPI example; Flask/Django have equivalents
+import pytest
 from fastapi.testclient import TestClient
+from app.db import get_db          # the app's session dependency — name from Assess
 from app.main import app
 
-client = TestClient(app)
+@pytest.fixture
+def client(db_session):
+    """Route the app's DB dependency to the test's transaction, so it sees factory data and rolls back with it."""
+    app.dependency_overrides[get_db] = lambda: db_session
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
 
 # I-01 create order returns 201 with id
-def test_i01_create_order(db_session, user_factory):
+def test_i01_create_order(client, user_factory):
     user = user_factory()
     resp = client.post("/orders", json={"user_id": user.id, "items": [{"sku": "A1", "qty": 2}]})
     assert resp.status_code == 201
