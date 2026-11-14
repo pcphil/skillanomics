@@ -218,6 +218,7 @@ markers = [
   "e2e: browser layer",
   "writes: creates or mutates data; never runs on production",
   "slow: long-running, opt-in",
+  "quarantined: known flake; off the merge gate, runs nightly",
   "role(name): run the e2e test as this role; role(None) = anonymous",
 ]
 ```

@@ -63,6 +63,7 @@ When the repo already uses another runner for a layer, keep it.
 | regression | `@pytest.mark.regression` | `@regression` | full set |
 | writes | `@pytest.mark.writes` | `@writes` | mutates data |
 | slow | `@pytest.mark.slow` | `@slow` | opt-in |
+| quarantined | `@pytest.mark.quarantined` | `@quarantined` | known flake: off the merge gate, runs nightly (`references/triage.md` §5) |
 
 ## 6. Reporting
 

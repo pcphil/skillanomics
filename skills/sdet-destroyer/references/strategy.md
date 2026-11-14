@@ -98,7 +98,7 @@ Written to `tests/TESTING.md` in the target repo after full-pipeline sign-off. K
 
 ## Conventions
 - Test names carry case IDs: <example>
-- Markers / tags: smoke (P0, gates merge), regression (full), api, e2e, slow
+- Markers / tags: smoke (P0, gates merge), regression (full), api, e2e, slow, quarantined (known flake, off the gate)
 - Data: each test creates and cleans up its own data via <factories/fixtures path>
 - Selectors: role/label first, test IDs as fallback
 
@@ -117,6 +117,10 @@ Written to `tests/TESTING.md` in the target repo after full-pipeline sign-off. K
 
 ## Risk map
 <High risks → case IDs covering them>
+
+## Quarantine
+| Test | Since | Symptom | Suspected cause | Next step |
+|------|-------|---------|-----------------|-----------|
 
 ## Journeys & endpoints
 <filled after live browser exploration — format in references/browser-exploration.md>

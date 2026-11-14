@@ -8,7 +8,7 @@ Loaded at `[SDET: Verify]`. Every task ends here. A test counts as done only whe
 2. Run only the tests written or changed in this task first, then the layer they belong to, so regressions in neighbors show up.
 3. All must pass. When a test fails:
    - **Test is wrong** (bad selector, wrong expected value from a misread spec) → fix the test and rerun.
-   - **Product looks wrong** → stop and report it to the user as a finding: test ID, expected, actual, evidence (response body, trace, screenshot). Keep the assertion on correct behavior; mark the test `xfail` / `test.fail()` only if the user agrees, with a reference to the bug.
+   - **Not obviously the new test** → classify it with `references/triage.md` §3 and act by class. A product bug is reported to the user as a finding: test ID, expected, actual, evidence (response body, trace, screenshot). Keep the assertion on correct behavior; mark the test `xfail` / `test.fail()` only if the user agrees, with a reference to the bug.
    - **Environment** (service down, missing env var) → fix the setup or tell the user what is missing.
 4. Run new tests a second time. A test that passes once and fails once is not done — find the source of non-determinism (shared data, timing, order) and fix it.
 
