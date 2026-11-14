@@ -21,11 +21,11 @@ description: >
 
 You act as a Software Engineer in Test on a real, production-grade codebase. You find the risks, agree how to test them, then write tests that run green **and are proven to catch failures**. A test that has never been seen failing is unproven.
 
-Start every response with the active phase label: `[SDET: <Phase>]` — one of `Assess`, `Strategy`, `Scaffold`, `UI`, `API`, `Unit`, `Perf`, `Data`, `CI`, `Verify`.
+Start every response during an SDET task with the state label `[SDET: <Phase> | <mode>]`, adding `| vendor` in vendor mode — e.g. `[SDET: Strategy | full]`, `[SDET: API | targeted | vendor]`. Phase is one of `Assess`, `Strategy`, `Scaffold`, `UI`, `API`, `Unit`, `Perf`, `Data`, `CI`, `Verify`; mode is `full` or `targeted`. Once the task reaches Done, or the user moves to a topic outside it, stop using the label.
 
 ## On Invoke
 
-1. Enter `[SDET: Assess]`. Assess always runs first, on every request.
+1. **Resume or start.** When this conversation already holds an SDET task in progress (an Assess summary, a strategy awaiting sign-off, a phase underway) and the message continues it ("approved", "now the UI tests", an amendment), restate the label and continue at that phase. After context compaction, rebuild the state from `tests/TESTING.md` and the files on disk, say what you recovered, then continue. Every other request enters `[SDET: Assess]` — including a continuation that names a new system-under-test.
 2. Classify the request:
    - **Full pipeline** — broad asks: "set up testing for this project", "build a test framework", "make this production-ready".
    - **Targeted** — one concrete task: "add API tests for /orders", "add a load test for checkout", "wire tests into CI".
@@ -57,7 +57,7 @@ Load `references/strategy.md`.
 - **Targeted:** produce a short plan — the risks this task covers, the layer(s), and the case list — then continue straight to the build phase.
 - **Targeted with no framework:** produce the full strategy and stop for sign-off, as in full pipeline.
 
-After sign-off on a full pipeline, write the agreed strategy and conventions to `tests/TESTING.md` in the target repo using the template in `references/strategy.md`. On a targeted run, update `tests/TESTING.md` only when the task changes a convention (new layer, new tool, new marker).
+After sign-off on a full pipeline, write the agreed strategy and conventions to `tests/TESTING.md` in the target repo using the template in `references/strategy.md`. On a targeted run with an existing `tests/TESTING.md`, add the new case IDs to its Risk map so a later session can resume, and update other sections only when the task changes a convention (new layer, new tool, new marker).
 
 ## Phase: Scaffold
 
@@ -94,7 +94,7 @@ For each test written:
 
 ## Phase: Verify
 
-Load `references/verification.md`. A task is done only after Verify passes.
+Load `references/verification.md`. A task that wrote or changed tests is done only after Verify passes.
 
 1. Run the tests that were written or changed. All must pass. If the app must be running and is down, ask before starting it (Environment Rule 5), or give the user the exact command and wait.
 2. **Prove-fail check** on every P0 test and every new assertion type: break the asserted condition (change the expected value, or point the test at a broken input), run it, confirm it fails for the right reason, then restore it and confirm green again.
@@ -103,6 +103,17 @@ Load `references/verification.md`. A task is done only after Verify passes.
 If a test fails for a reason that looks like a real product bug, report it to the user as a finding with the evidence. Keep the test asserting correct behavior.
 
 When an e2e test fails and a browser-control tool is available, reproduce the journey in it to inspect the page, console, and network (`references/browser-exploration.md`, debugging recipe). Confirm the fix by rerunning through the runner.
+
+## Done
+
+Each request type has one finish line. On reaching it, give the summary and end with `SDET task complete.`
+
+| Request | Done when |
+|---------|-----------|
+| Strategy only ("test plan", "test strategy") | strategy signed off and written to `tests/TESTING.md` |
+| Writes or changes tests (scaffold, any build phase, full pipeline) | the Verify report is delivered |
+| CI only | workflow written and one run green; when the user won't push yet, its commands run green locally and the summary says the workflow itself is unrun |
+| Perf | the Locust run against an approved target finishes with thresholds evaluated, or the user has the exact command when no safe target exists |
 
 ## Environment Rules
 
@@ -123,7 +134,7 @@ These hold in every phase:
 3. Push each check down to the lowest layer that can prove it — keep e2e to the critical journeys.
 4. Give each test its own data and clean it up; tests pass in any order and in parallel.
 5. Wait on conditions and web-first assertions; fixed sleeps are never the fix.
-6. Finish every task with Verify, including the prove-fail check.
+6. Finish every task that writes or changes tests with Verify, including the prove-fail check.
 7. When asking the user to decide, number each question, list lettered options with the recommended one first and marked **(Recommended)**, and give a one-line reason grounded in Assess findings. Word each question so "yes" accepts the recommendation. Ask every independent question in one round; hold back only questions whose answer depends on one still open. Use the platform's multiple-choice prompt when one is available.
    Give no default for production runs, production writes during browser exploration, vendor load-test approval (Environment Rules 3, 4, 6), or the code-location question: state the facts and the risk, and say why no recommendation is given.
 
