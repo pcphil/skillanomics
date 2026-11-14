@@ -179,7 +179,7 @@ export class Api {
 
 ## 4. Auth fixtures per role
 
-Each role in `TEST_ROLES` gets an authenticated `Api`, logged in through the API once per session (Python; once per xdist worker) or worker (TS), plus `anon` with no credentials. The login path and token field below are placeholders — use what Assess found (bearer token, session cookie, OAuth client credentials).
+Each role in `TEST_ROLES` gets an authenticated `Api`, logged in through the API once per session (Python; once per xdist worker) or worker (TS), plus `anon` with no credentials. The login path comes from `TEST_LOGIN_PATH`; the token field is a placeholder — use what Assess found. The samples show a bearer token. For a session-cookie app, keep the logged-in client itself (httpx clients and Playwright request contexts store the cookie) and drop the `Authorization` header; for OAuth client credentials, request the token from the identity provider instead.
 
 ### Python
 
@@ -192,11 +192,11 @@ from tests.support.clients import Api
 
 def _token(env: Settings, role: str) -> str:
     creds = env.role(role)
-    resp = httpx.post(f"{env.api_base}/auth/login",
+    resp = httpx.post(f"{env.api_base}{env.login_path}",
                       json={"username": creds.username, "password": creds.password}, timeout=10)
     if not resp.is_success:
         raise RuntimeError(f"login failed for role {role}: {resp.status_code}")
-    return resp.json()["token"]
+    return resp.json()["token"]  # token location from Assess
 
 @pytest.fixture(scope="session")
 def api_as(env_settings):
@@ -232,13 +232,13 @@ Add one `<role>_api` fixture per role the strategy names.
 ```ts
 // tests/api/fixtures.ts
 import { test as base, request as pwRequest, type APIRequestContext } from "@playwright/test";
-import { settings, roles } from "../settings";
+import { credentials, settings } from "../settings";
 import { Api } from "../support/clients";
 
 async function contextFor(role: string | null): Promise<APIRequestContext> {
   if (!role) return pwRequest.newContext({ baseURL: settings.apiBase });
   const login = await pwRequest.newContext({ baseURL: settings.apiBase });
-  const res = await login.post("/auth/login", { data: roles[role] });
+  const res = await login.post(settings.loginPath, { data: credentials(role) });
   if (!res.ok()) throw new Error(`login failed for role ${role}: ${res.status()}`);
   const { token } = await res.json();
   await login.dispose();
@@ -273,7 +273,7 @@ UI fixtures extend this `test`, so browser tests get the same clients for setup.
 ### Python
 
 ```python
-# tests/api/test_orders.py
+# tests/api/test_api_orders.py
 import pytest
 from tests.factories.order import order_payload
 from tests.support.models import ApiError, Order

@@ -128,8 +128,8 @@ def database_server(env_settings, worker_id):
             "(docker compose up -d db, or a CI service container) and export its URL"
         )
     from testcontainers.postgres import PostgresContainer
-    with PostgresContainer("postgres:16-alpine") as pg:
-        yield pg.get_connection_url()
+    with PostgresContainer("postgres:16-alpine", driver="psycopg") as pg:
+        yield pg.get_connection_url()  # postgresql+psycopg://…
 
 @pytest.fixture(scope="session")
 def engine(database_server, worker_id):
@@ -185,7 +185,7 @@ Pin image tags to the version production runs.
 - **Entity data** (users, orders) — per test, via factories and fixtures.
 - **Staging** — never depend on data created by hand; create and clean up through the API.
 - **Vendor sandbox** — shared with other teams: prefix every created record with the run ID and sweep leftovers nightly (`references/vendor-apps.md` §9).
-- **Production** — read-only smoke only: read pre-existing, known-stable records (IDs supplied through env vars). Create nothing.
+- **Production** — read-only smoke only: read pre-existing, known-stable records (IDs supplied through env vars); every production test is a read.
 
 ## 5. Environments
 

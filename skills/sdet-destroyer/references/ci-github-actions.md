@@ -2,9 +2,9 @@
 
 Loaded at `[SDET: CI]`, **on demand only**: when the user asks to wire tests into CI. Scaffold and the full pipeline create no workflows. Wires the suite into GitHub Actions so the right tests gate merges and every run leaves triageable reports. Ask the user before adding or changing a workflow that runs on push or pull request.
 
-New workflows are separate files with a `qa-` prefix (`qa-pr.yml`, `qa-nightly.yml`, `qa-prod-smoke.yml`), so they never collide with or look like replacements for the team's CI. Add jobs into an existing workflow only when the user asks for that.
+New workflows are separate files with a `qa-` prefix (`qa-pr.yml`, `qa-nightly.yml`, `qa-prod-smoke.yml`), so they never collide with or look like replacements for the team's CI. Add jobs into an existing workflow only when the user asks for that. A repo with both stacks gets one `qa-pr.yml` holding both job sets, job names prefixed `py-` and `js-`.
 
-If the user opted into type checking (`references/architecture.md` §5), add a step to the Python job in `qa-pr.yml`: `uv run mypy --config-file tests/mypy.ini`. In-app repos without `.python-version`: pass `python-version` to `astral-sh/setup-uv` (match the repo's `requires-python`).
+If the user opted into type checking (`references/scaffold-python.md` §3), add a step to the Python job in `qa-pr.yml`: `uv run mypy --config-file tests/mypy.ini`. In-app repos without `.python-version`: pass `python-version` to `astral-sh/setup-uv` (match the repo's `requires-python`).
 
 ## 1. Gating model
 
@@ -41,7 +41,7 @@ jobs:
       - run: uv sync --group test
       - run: uv run pytest tests/unit tests/integration -n auto -m "not slow" --junitxml=tests/reports/junit-unit.xml
         env:
-          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -91,7 +91,7 @@ jobs:
 ```
 
 - The test settings read `TEST_*` variables only, so CI env never collides with the app's own variables. Secrets are named the same (`TEST_ROLE_MEMBER_PASSWORD`).
-- `-n`, `--timeout`, and `--reruns` live in these commands, not in global pytest config (`references/architecture.md` §2).
+- `-n`, `--timeout`, and `--reruns` live in these commands, not in global pytest config (`references/scaffold-plan.md` §2).
 - Repo on poetry or pip: keep its install step (`poetry install --with test`, `pip install -r requirements-dev.txt`) and `actions/setup-python` with `python-version-file: .python-version`.
 
 ## 3. JS / TS workflow
@@ -130,6 +130,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: <start the app in the background, e.g. docker compose up -d --wait>
       - run: npx playwright test -c tests/playwright.config.ts --project=api   # request-only: no browser install needed
         env:
           TEST_TARGET_ENV: local
@@ -257,6 +258,7 @@ jobs:
           TEST_TARGET_ENV: production
           TEST_BASE_URL: ${{ vars.PROD_URL }}
           TEST_ROLES: smoke
+          TEST_DEFAULT_ROLE: smoke                                       # tests without a role marker log in as this account
           TEST_ROLE_SMOKE_USERNAME: ${{ secrets.PROD_SMOKE_USERNAME }}   # dedicated read-only account
           TEST_ROLE_SMOKE_PASSWORD: ${{ secrets.PROD_SMOKE_PASSWORD }}
 ```

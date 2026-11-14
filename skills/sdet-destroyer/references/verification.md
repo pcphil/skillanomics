@@ -4,7 +4,7 @@ Loaded at `[SDET: Verify]`. Every task ends here. A test counts as done only whe
 
 ## 1. Run green
 
-1. Make sure the system-under-test is available: start it with the project's run command, or tell the user the exact command and wait for confirmation that it is up.
+1. Make sure the system-under-test is available. If it is down, ask the user before starting it with the project's run command (SKILL.md Environment Rule 5), or give them the exact command and wait for confirmation that it is up.
 2. Run only the tests written or changed in this task first, then the layer they belong to, so regressions in neighbors show up.
 3. All must pass. When a test fails:
    - **Test is wrong** (bad selector, wrong expected value from a misread spec) → fix the test and rerun.
@@ -36,11 +36,11 @@ End the phase with a short report:
 ```
 [SDET: Verify]
 
-Added / changed: 12 tests (U-01..U-06, I-10..I-13, E-01, E-02)
-Run: 12 passed, 0 failed (2 consecutive runs)
+Added / changed: 13 tests (U-01..U-06, I-10..I-14, E-01, E-02)
+Run: 12 passed, 1 xfailed (I-14, user agreed; bug link pending), 0 failed (2 consecutive runs)
 Prove-fail: U-01, I-10, I-11, E-01 — each failed on the broken assertion, green after restore
 Not verified: E-02 — needs staging credentials (TEST_ROLE_MEMBER_USERNAME missing for staging)
-Findings: I-12 — PATCH /orders/{id} returns 500 for qty=0; expected 422. Evidence: response body below.
+Findings: I-14 — PATCH /orders/{id} returns 500 for qty=0; expected 422. Evidence: response body below.
 Run commands:
   uv run pytest tests/unit tests/api -n auto
   uv run pytest tests/e2e -m smoke -n auto
