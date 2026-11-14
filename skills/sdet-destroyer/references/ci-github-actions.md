@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5   # reads .python-version
       - run: uv sync --group test
-      - run: uv run pytest tests/unit tests/integration -n auto -m "not slow" --junitxml=tests/reports/junit-unit.xml
+      - run: uv run pytest tests/unit tests/integration -n auto -m "not slow and not quarantined" --junitxml=tests/reports/junit-unit.xml
         env:
           TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
       - uses: actions/upload-artifact@v4
@@ -55,7 +55,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --group test
       - run: <start the app in the background, e.g. docker compose up -d --wait>
-      - run: uv run pytest tests/api -n auto --timeout 30 --junitxml=tests/reports/junit-api.xml
+      - run: uv run pytest tests/api -n auto -m "not quarantined" --timeout 30 --junitxml=tests/reports/junit-api.xml
         env:
           TEST_TARGET_ENV: local
           TEST_BASE_URL: http://localhost:8000
@@ -75,7 +75,7 @@ jobs:
       - run: uv sync --group test
       - run: uv run playwright install --with-deps chromium
       - run: <start the app in the background, e.g. docker compose up -d --wait>
-      - run: uv run pytest tests/e2e -m smoke -n auto --reruns 1 --junitxml=tests/reports/junit-e2e.xml --html=tests/reports/e2e.html --self-contained-html
+      - run: uv run pytest tests/e2e -m "smoke and not quarantined" -n auto --reruns 1 --junitxml=tests/reports/junit-e2e.xml --html=tests/reports/e2e.html --self-contained-html
         env:
           TEST_TARGET_ENV: local
           TEST_BASE_URL: http://localhost:8000
@@ -131,7 +131,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: <start the app in the background, e.g. docker compose up -d --wait>
-      - run: npx playwright test -c tests/playwright.config.ts --project=api   # request-only: no browser install needed
+      - run: npx playwright test -c tests/playwright.config.ts --project=api --grep-invert @quarantined   # request-only: no browser install needed
         env:
           TEST_TARGET_ENV: local
           TEST_BASE_URL: http://localhost:3000
@@ -157,7 +157,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test -c tests/playwright.config.ts --project=chromium --grep @smoke --shard ${{ matrix.shard }}
+      - run: npx playwright test -c tests/playwright.config.ts --project=chromium --grep @smoke --grep-invert @quarantined --shard ${{ matrix.shard }}
         env:
           TEST_TARGET_ENV: local
           TEST_BASE_URL: http://localhost:3000
@@ -190,8 +190,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # setup as in qa-pr.yml; install all browsers: playwright install --with-deps
-      # Python: uv run pytest -m regression -n auto --browser chromium --browser firefox --browser webkit
-      #         then: uv run pytest tests/e2e -m regression -n auto --device "Pixel 7"
+      # Python: uv run pytest -m "regression or quarantined" -n auto --browser chromium --browser firefox --browser webkit
+      #         then: uv run pytest tests/e2e -m "regression or quarantined" -n auto --device "Pixel 7"
       # TS:     npx playwright test -c tests/playwright.config.ts   (all projects: api, chromium, firefox, webkit, mobile)
       - run: <full regression command for the stack, from above>
         env:

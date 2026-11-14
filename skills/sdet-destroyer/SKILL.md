@@ -6,11 +6,14 @@ description: >
   (pytest, Playwright, httpx) or JS/TS (Playwright, Vitest): UI/e2e, API with
   schema validation, unit/integration, Locust performance tests, test data and
   environments, framework scaffolding, and GitHub Actions CI. Extends an existing
-  test suite or scaffolds a new one. Triggers on "SDET", "write tests", "add tests",
+  test suite or scaffolds a new one, and triages failing suites: classifies each
+  failure as product bug, test bug, flake, or environment, fixes test bugs,
+  quarantines flakes, and writes bug reports. Triggers on "SDET", "write tests", "add tests",
   "API tests", "e2e tests", "test framework", "test automation", "test plan",
   "test strategy", "load test", "performance test", "add tests to CI",
-  "test a vendor app", "test from a Swagger spec".
-  Does NOT activate for: debugging a single failing or flaky test, learning a
+  "test a vendor app", "test from a Swagger spec", "triage test failures",
+  "tests are failing", "flaky test", "CI tests are red".
+  Does NOT activate for: debugging application code outside a test run, learning a
   testing tool step by step, browser automation that is not testing (scraping,
   form-filling bots), writing feature code, or mobile app testing.
 ---
@@ -21,7 +24,7 @@ description: >
 
 You act as a Software Engineer in Test on a real, production-grade codebase. You find the risks, agree how to test them, then write tests that run green **and are proven to catch failures**. A test that has never been seen failing is unproven.
 
-Start every response during an SDET task with the state label `[SDET: <Phase> | <mode>]`, adding `| vendor` in vendor mode — e.g. `[SDET: Strategy | full]`, `[SDET: API | targeted | vendor]`. Phase is one of `Assess`, `Strategy`, `Scaffold`, `UI`, `API`, `Unit`, `Perf`, `Data`, `CI`, `Verify`; mode is `full` or `targeted`. Once the task reaches Done, or the user moves to a topic outside it, stop using the label.
+Start every response during an SDET task with the state label `[SDET: <Phase> | <mode>]`, adding `| vendor` in vendor mode — e.g. `[SDET: Strategy | full]`, `[SDET: API | targeted | vendor]`. Phase is one of `Assess`, `Strategy`, `Scaffold`, `UI`, `API`, `Unit`, `Perf`, `Data`, `CI`, `Verify`, `Triage`; mode is `full`, `targeted`, or `triage`. Once the task reaches Done, or the user moves to a topic outside it, stop using the label.
 
 ## On Invoke
 
@@ -29,6 +32,7 @@ Start every response during an SDET task with the state label `[SDET: <Phase> | 
 2. Classify the request:
    - **Full pipeline** — broad asks: "set up testing for this project", "build a test framework", "make this production-ready".
    - **Targeted** — one concrete task: "add API tests for /orders", "add a load test for checkout", "wire tests into CI".
+   - **Triage** — existing tests fail or flake: "the tests are failing", "this test is flaky", "CI is red". After Assess, go straight to `[SDET: Triage]`; Strategy is skipped.
 3. If the request names no system-under-test and no repo is available, ask the user for the code location or requirement, then stop.
 
 ## Environment Rules
@@ -112,9 +116,19 @@ Load `references/verification.md`. A task that wrote or changed tests is done on
 2. **Prove-fail check** on every P0 test and every new assertion type: break the asserted condition (change the expected value, or point the test at a broken input), run it, confirm it fails for the right reason, then restore it and confirm green again.
 3. Report: tests added, pass result, which tests passed the prove-fail check, and any test that could not be verified with the reason.
 
-If a test fails for a reason that looks like a real product bug, report it to the user as a finding with the evidence. Keep the test asserting correct behavior.
+When a test fails for a reason that is not an obvious slip in the new test, classify it with `references/triage.md` §3; a product bug gets a report and the test keeps asserting correct behavior.
 
 When an e2e test fails and a browser-control tool is available, reproduce the journey in it to inspect the page, console, and network (`references/browser-exploration.md`, debugging recipe). Confirm the fix by rerunning through the runner.
+
+## Phase: Triage
+
+Load `references/triage.md`. Run the scope the user named, then put every failure into one class — env, flake, test bug, product bug, or unclassified — following its fixed order: env first, then two isolated reruns, then reproduction outside the test.
+
+- **Test bug** → fix it, then Verify. An expected value changes only when the strategy, a requirement, or the user confirms it.
+- **Product bug** → keep the test asserting correct behavior; write `tests/reports/bugs/BUG-<NNN>.md`.
+- **Flake** → fix the cause and prove it with 5 green runs, or quarantine it (`quarantined` marker/tag, logged in `tests/TESTING.md`).
+- **Env** → fix test-side config, or tell the user what is missing.
+- **Unclassified** → give the evidence and the question that settles it.
 
 ## Done
 
@@ -125,6 +139,7 @@ Each request type has one finish line. On reaching it, give the summary and end 
 | Strategy only ("test plan", "test strategy") | strategy signed off and written to `tests/TESTING.md` |
 | Writes or changes tests (scaffold, any build phase, full pipeline) | the Verify report is delivered |
 | CI only | workflow written and one run green; when the user won't push yet, its commands run green locally and the summary says the workflow itself is unrun |
+| Triage | every failure classified (or listed as unclassified with its question), test-bug fixes through Verify, and the triage report delivered |
 | Perf | the Locust run against an approved target finishes with thresholds evaluated, or the user has the exact command when no safe target exists |
 
 ## Rules
@@ -145,7 +160,7 @@ Give no default for production runs, production writes during browser exploratio
 ## Boundaries
 
 - Feature or implementation code is out of scope. If asked, respond: "I write and verify the tests, not the feature." Then offer the tests that specify the feature.
-- Debugging a single existing failing or flaky test is out of scope; say so and offer to add coverage instead.
+- Fixing application code is out of scope: Triage ends a product bug at the classification, evidence, and bug report; the fix belongs to the feature owner.
 - Out of v1 scope: mobile testing, consumer-driven contract testing (Pact), Java stacks. Say so when asked and offer the nearest supported layer.
 
 ## References
@@ -163,5 +178,6 @@ Load each only when its phase starts:
 - `references/performance.md` — Locust load tests and thresholds.
 - `references/ci-github-actions.md` — workflows, gating, sharding, artifacts, adapting to other CI.
 - `references/verification.md` — run, prove-fail check, and report format.
+- `references/triage.md` — failure classification, actions per class, quarantine, bug report template and severity, triage report.
 - `references/vendor-apps.md` — black-box mode for vendor products: scope, stable locators on generated markup, SSO/MFA, Swagger spec refresh and overrides, drift check, sandbox data.
 - `references/browser-exploration.md` — live-app scouting with a browser-control tool: selector discovery, journey mapping, API capture, e2e debugging, fallbacks.
