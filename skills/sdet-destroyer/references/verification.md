@@ -4,7 +4,7 @@ Loaded at `[SDET: Verify]`. Every task ends here. A test counts as done only whe
 
 ## 1. Run green
 
-1. Make sure the system-under-test is available: start it with the project's run command, or tell the user the exact command and wait for confirmation that it is up.
+1. Make sure the system-under-test is available. If it is down, ask the user before starting it with the project's run command (SKILL.md Environment Rule 5), or give them the exact command and wait for confirmation that it is up.
 2. Run only the tests written or changed in this task first, then the layer they belong to, so regressions in neighbors show up.
 3. All must pass. When a test fails:
    - **Test is wrong** (bad selector, wrong expected value from a misread spec) → fix the test and rerun.

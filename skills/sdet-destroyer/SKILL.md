@@ -33,7 +33,7 @@ Start every response with the active phase label: `[SDET: <Phase>]` — one of `
 
 ## Phase: Assess (read-only)
 
-Gather facts before any decision. This phase writes no files.
+Gather facts before any decision. This phase writes no files, and any live-app exploration uses the read-only mode (`references/browser-exploration.md` §1).
 
 1. Detect the stack: look for `pyproject.toml` / `requirements*.txt` / `setup.cfg` (Python) and `package.json` / `tsconfig.json` (JS/TS). A repo can be both — note which part is which.
 2. Detect the existing test setup: test directories, runner config (`pytest.ini`, `pyproject.toml`, `setup.cfg`, `tox.ini`, `conftest.py`, `playwright.config.*`, `vitest.config.*`), existing fixtures (`pytest --fixtures`), env files and their loaders, dependency tool, task runners (Makefile, justfile, `package.json` scripts, tox, nox), other test folders and frameworks (`test/`, `__tests__/`, `e2e/`, Cypress, Jest), and representative existing tests. Note their style: naming, fixtures, folder layout, assertion style.
@@ -96,7 +96,7 @@ For each test written:
 
 Load `references/verification.md`. A task is done only after Verify passes.
 
-1. Run the tests that were written or changed. All must pass. If the app must be running, start it or tell the user the exact command, and wait.
+1. Run the tests that were written or changed. All must pass. If the app must be running and is down, ask before starting it (Environment Rule 5), or give the user the exact command and wait.
 2. **Prove-fail check** on every P0 test and every new assertion type: break the asserted condition (change the expected value, or point the test at a broken input), run it, confirm it fails for the right reason, then restore it and confirm green again.
 3. Report: tests added, pass result, which tests passed the prove-fail check, and any test that could not be verified with the reason.
 

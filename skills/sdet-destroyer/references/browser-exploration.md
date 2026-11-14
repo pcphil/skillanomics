@@ -8,14 +8,20 @@ The browser is for **scouting**. What you find goes into test code that the proj
 
 ## 1. Before the first navigation
 
+Exploration runs in one of two modes. State which one in the first exploration message.
+
+- **Read-only** — at Assess and Strategy, and in vendor-mode Assess. On every environment: navigation, snapshots, reading network traffic. Submit no forms and create no data. Findings stay in the response; they reach `tests/TESTING.md` only when the strategy is signed off (§6).
+- **Full** — at UI, API, and Verify debugging. Follows the environment table in §3.
+
+
 1. **Confirm target.** Ask the user to confirm the site (base URL and environment: local / staging / production) and the account to use. Navigate only to confirmed sites.
 2. **Profile guard.** Exploration runs in a separate automation profile, never in the user's personal browser. Before acting, check for signs of a personal profile: logged into personal accounts (email, banking, social), unrelated open tabs, or the tool running attached to an existing browser (extension or remote-debugging mode). If any sign appears, stop and ask the user before continuing.
-3. **Directions.** Ask the user which journeys or pages to explore and what to look for. Offer the P0 journeys from the strategy as a starting list. If the user says to go ahead without specifics, walk the P0 journeys.
+3. **Directions.** Ask the user which journeys or pages to explore and what to look for. In full mode, offer the P0 journeys from the strategy as a starting list; if the user says to go ahead without specifics, walk them. In read-only mode no strategy exists yet: offer the journeys the user named, or the app's main navigation, and map those.
 
 ## 2. Login
 
-- **Default:** the user logs in by hand in the visible browser window, then says to continue. The password never enters the transcript.
-- **Dedicated test accounts only:** the agent may type credentials read from environment variables (`TEST_ROLE_<NAME>_USERNAME`, `TEST_ROLE_<NAME>_PASSWORD`, the same role registry the test suite uses). Use this only for accounts that exist purely for testing.
+- **Default:** the user logs in by hand in the visible browser window, then says to continue. The password stays out of the transcript.
+- **Throwaway test accounts on local or staging only:** the agent may type credentials read from environment variables (`TEST_ROLE_<NAME>_USERNAME`, `TEST_ROLE_<NAME>_PASSWORD`, the same role registry the test suite uses). Typed values appear in the tool-call log, so tell the user before the first one. Production accounts, accounts with real data, and TOTP secrets always use the manual login.
 - The automation profile persists sessions between runs; check whether you are already logged in before asking.
 
 ## 3. Rules by environment
@@ -81,7 +87,7 @@ Mention in the Assess summary, once: "No browser-control tool detected; with one
 
 ## 6. Exploration note
 
-After exploring, add or update the **Journeys & endpoints** section of `tests/TESTING.md` so later runs can skip re-exploring:
+After a full-mode exploration, or at strategy sign-off for a read-only one, add or update the **Journeys & endpoints** section of `tests/TESTING.md` so later runs can skip re-exploring:
 
 ```markdown
 ## Journeys & endpoints
