@@ -160,26 +160,26 @@ def base_url(env_settings):
     return env_settings.require("base_url")
 
 @pytest.fixture
-def browser_context_args(browser_context_args, storage_state_for, request):
+def browser_context_args(browser_context_args, storage_state_for, env_settings, request):
     marker = request.node.get_closest_marker("role")
-    role = marker.args[0] if marker else "member"
+    role = marker.args[0] if marker else env_settings.default_role
     if role is None:
         return browser_context_args  # anonymous
     return {**browser_context_args, "storage_state": storage_state_for(role)}
 ```
 
-Choose the role per test with `@pytest.mark.role("admin")`; `@pytest.mark.role(None)` runs anonymously; no marker means `member`. Under xdist each worker produces its own storage state — sessions stay isolated per worker.
+Choose the role per test with `@pytest.mark.role("admin")`; `@pytest.mark.role(None)` runs anonymously; no marker means `TEST_DEFAULT_ROLE` (`member` unless set; the production smoke workflow sets `smoke`). Under xdist each worker produces its own storage state — sessions stay isolated per worker.
 
 ### TS
 
 ```ts
 // tests/e2e/auth.setup.ts — one storage state file per role, via the API
 import { test as setup } from "@playwright/test";
-import { roleNames, roles, settings } from "../settings";
+import { credentials, roleNames, settings } from "../settings";
 
 for (const role of roleNames) {
   setup(`authenticate as ${role}`, async ({ request }) => {
-    const res = await request.post(`${settings.apiBase}/auth/login`, { data: roles[role] });
+    const res = await request.post(`${settings.apiBase}/auth/login`, { data: credentials(role) });
     if (!res.ok()) throw new Error(`login failed for role ${role}: ${res.status()}`);
     await request.storageState({ path: `tests/.auth/${role}.json` }); // standalone: .auth/
   });
@@ -188,7 +188,7 @@ for (const role of roleNames) {
 
 ```ts
 // default role for all e2e projects — playwright.config.ts, inside each browser project's `use`
-storageState: path.join(authDir, "member.json"), // authDir = tests/.auth (references/architecture.md §7)
+storageState: path.join(authDir, `${settings.defaultRole}.json`), // authDir = tests/.auth (references/architecture.md §7)
 
 // per file or describe block
 test.use({ storageState: path.resolve("tests/.auth/admin.json") });          // as admin
@@ -202,7 +202,7 @@ test.use({ storageState: { cookies: [], origins: [] } }); // anonymous
 **Set up state via API, assert via UI.** Create what a journey needs with the `*_ok` / `*Ok` client methods, then drive and assert in the browser. Clean up after.
 
 ```python
-# tests/e2e/test_orders.py
+# tests/e2e/test_e2e_orders.py
 import pytest
 from playwright.sync_api import expect
 from tests.factories.order import order_payload

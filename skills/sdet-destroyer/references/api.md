@@ -232,13 +232,13 @@ Add one `<role>_api` fixture per role the strategy names.
 ```ts
 // tests/api/fixtures.ts
 import { test as base, request as pwRequest, type APIRequestContext } from "@playwright/test";
-import { settings, roles } from "../settings";
+import { credentials, settings } from "../settings";
 import { Api } from "../support/clients";
 
 async function contextFor(role: string | null): Promise<APIRequestContext> {
   if (!role) return pwRequest.newContext({ baseURL: settings.apiBase });
   const login = await pwRequest.newContext({ baseURL: settings.apiBase });
-  const res = await login.post("/auth/login", { data: roles[role] });
+  const res = await login.post("/auth/login", { data: credentials(role) });
   if (!res.ok()) throw new Error(`login failed for role ${role}: ${res.status()}`);
   const { token } = await res.json();
   await login.dispose();
@@ -273,7 +273,7 @@ UI fixtures extend this `test`, so browser tests get the same clients for setup.
 ### Python
 
 ```python
-# tests/api/test_orders.py
+# tests/api/test_api_orders.py
 import pytest
 from tests.factories.order import order_payload
 from tests.support.models import ApiError, Order

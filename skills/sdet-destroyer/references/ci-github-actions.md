@@ -257,6 +257,7 @@ jobs:
           TEST_TARGET_ENV: production
           TEST_BASE_URL: ${{ vars.PROD_URL }}
           TEST_ROLES: smoke
+          TEST_DEFAULT_ROLE: smoke                                       # tests without a role marker log in as this account
           TEST_ROLE_SMOKE_USERNAME: ${{ secrets.PROD_SMOKE_USERNAME }}   # dedicated read-only account
           TEST_ROLE_SMOKE_PASSWORD: ${{ secrets.PROD_SMOKE_PASSWORD }}
 ```

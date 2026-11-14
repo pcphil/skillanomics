@@ -80,6 +80,8 @@ pyproject.toml                      # in-app: + test group (+ pytest markers if 
 
 There is **no `.env.production`**. Production values exist only in CI (section 4).
 
+Give every test file a basename unique across the whole suite, prefixed by layer: `test_api_orders.py`, `test_e2e_orders.py`. The test folders have no `__init__.py`, and pytest's default import mode stops with "import file mismatch" when two folders hold the same file name.
+
 ### TS
 
 ```
@@ -146,6 +148,7 @@ class Settings(BaseSettings):
     api_url: str = ""
     database_url: str = ""
     roles: str = "member"  # comma-separated role names
+    default_role: str = "member"  # role for tests with no role marker; production smoke uses "smoke"
 
     def require(self, field: str) -> str:
         value = getattr(self, field)
@@ -229,6 +232,7 @@ TEST_BASE_URL=http://localhost:8000
 TEST_API_URL=
 TEST_DATABASE_URL=
 TEST_ROLES=member,admin
+TEST_DEFAULT_ROLE=member
 TEST_ROLE_MEMBER_USERNAME=member@example.test
 TEST_ROLE_MEMBER_PASSWORD=change-me
 TEST_ROLE_ADMIN_USERNAME=admin@example.test
@@ -256,31 +260,36 @@ function required(name: string): string {
   return value;
 }
 
+// `KEY=` in an env file loads as "", which counts as unset
+const blank = (schema: z.ZodTypeAny) => z.preprocess((v) => (v === "" ? undefined : v), schema);
+
 const env = z
   .object({
     TEST_TARGET_ENV: z.enum(["local", "staging", "production"]),
     TEST_BASE_URL: z.string().url(),
-    TEST_API_URL: z.string().url().optional(),
-    TEST_ROLES: z.string().default("member"),
+    TEST_API_URL: blank(z.string().url().optional()),
+    TEST_ROLES: blank(z.string().default("member")),
+    TEST_DEFAULT_ROLE: blank(z.string().default("member")),
   })
   .parse({ ...process.env, TEST_TARGET_ENV: targetEnv });
 
-export const roleNames = env.TEST_ROLES.split(",").map((r) => r.trim()).filter(Boolean);
-export const roles = Object.fromEntries(
-  roleNames.map((name) => {
-    const key = name.toUpperCase();
-    return [name, {
-      username: required(`TEST_ROLE_${key}_USERNAME`),
-      password: required(`TEST_ROLE_${key}_PASSWORD`),
-      totpSecret: process.env[`TEST_ROLE_${key}_TOTP_SECRET`], // vendor SSO with MFA
-    }];
-  }),
-) as Record<string, { username: string; password: string; totpSecret?: string }>;
+export const roleNames = (env.TEST_ROLES as string).split(",").map((r) => r.trim()).filter(Boolean);
+
+// Lazy, like Python's Settings.role(): only the roles a run uses need credentials
+export function credentials(role: string) {
+  const key = role.toUpperCase();
+  return {
+    username: required(`TEST_ROLE_${key}_USERNAME`),
+    password: required(`TEST_ROLE_${key}_PASSWORD`),
+    totpSecret: process.env[`TEST_ROLE_${key}_TOTP_SECRET`], // vendor SSO with MFA
+  };
+}
 
 export const settings = {
   targetEnv: env.TEST_TARGET_ENV,
   baseUrl: env.TEST_BASE_URL,
-  apiBase: env.TEST_API_URL ?? env.TEST_BASE_URL,
+  apiBase: (env.TEST_API_URL as string | undefined) || env.TEST_BASE_URL,
+  defaultRole: env.TEST_DEFAULT_ROLE as string,
 };
 ```
 
@@ -459,7 +468,7 @@ const reportDir = path.resolve("tests/reports");
 const e2e = (name: string, device: object) => ({
   name,
   testMatch: /e2e\/.*\.spec\.ts/,
-  use: { ...device, storageState: path.join(authDir, "member.json") },
+  use: { ...device, storageState: path.join(authDir, `${settings.defaultRole}.json`) },
   dependencies: ["setup"],
 });
 
@@ -546,7 +555,7 @@ The scaffold is done only when it ships **one working example test per layer in 
 If Assess found no health endpoint or stable page, ask the user for one.
 
 ```python
-# tests/api/test_smoke.py
+# tests/api/test_api_smoke.py
 import pytest
 from tests.support.models import Health
 
@@ -560,7 +569,7 @@ def test_i00_health(anon_api):
 ```
 
 ```python
-# tests/e2e/test_smoke.py
+# tests/e2e/test_e2e_smoke.py
 import pytest
 from playwright.sync_api import expect
 
