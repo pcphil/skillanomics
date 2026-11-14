@@ -12,7 +12,14 @@ Stack: Python uses `pytest-playwright` (sync API, `test_*.py`). TS uses `@playwr
 
 ## 2. Page objects
 
-Rules are in `references/architecture.md` §10. Shapes:
+1. One page object per screen or significant component, in `e2e/pages/`.
+2. Locators defined once, in the constructor.
+3. Methods express user intent (`login(email, password)`), not mechanics.
+4. A method that navigates returns the next page object.
+5. Assertions live in tests, not in page objects.
+6. Page objects reach tests through **fixtures** in both stacks — tests never construct them.
+
+Shapes:
 
 ### Python
 
@@ -188,7 +195,7 @@ for (const role of roleNames) {
 
 ```ts
 // default role for all e2e projects — playwright.config.ts, inside each browser project's `use`
-storageState: path.join(authDir, `${settings.defaultRole}.json`), // authDir = tests/.auth (references/architecture.md §7)
+storageState: path.join(authDir, `${settings.defaultRole}.json`), // authDir = tests/.auth (references/scaffold-ts.md §4)
 
 // per file or describe block
 test.use({ storageState: path.resolve("tests/.auth/admin.json") });          // as admin
