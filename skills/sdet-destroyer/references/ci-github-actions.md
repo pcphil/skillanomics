@@ -2,7 +2,7 @@
 
 Loaded at `[SDET: CI]`, **on demand only**: when the user asks to wire tests into CI. Scaffold and the full pipeline create no workflows. Wires the suite into GitHub Actions so the right tests gate merges and every run leaves triageable reports. Ask the user before adding or changing a workflow that runs on push or pull request.
 
-New workflows are separate files with a `qa-` prefix (`qa-pr.yml`, `qa-nightly.yml`, `qa-prod-smoke.yml`), so they never collide with or look like replacements for the team's CI. Add jobs into an existing workflow only when the user asks for that.
+New workflows are separate files with a `qa-` prefix (`qa-pr.yml`, `qa-nightly.yml`, `qa-prod-smoke.yml`), so they never collide with or look like replacements for the team's CI. Add jobs into an existing workflow only when the user asks for that. A repo with both stacks gets one `qa-pr.yml` holding both job sets, job names prefixed `py-` and `js-`.
 
 If the user opted into type checking (`references/architecture.md` §5), add a step to the Python job in `qa-pr.yml`: `uv run mypy --config-file tests/mypy.ini`. In-app repos without `.python-version`: pass `python-version` to `astral-sh/setup-uv` (match the repo's `requires-python`).
 

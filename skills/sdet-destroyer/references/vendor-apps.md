@@ -52,7 +52,7 @@ Reject generated values: numeric or hashed IDs and classes, for example `__butto
 Structure:
 
 - **Iframes** — locate through the frame: `page.frame_locator("iframe[name=gsft_main]")` (ServiceNow classic UI is an example). Note the frame in the page object.
-- **Shadow DOM** — Playwright locators pierce open shadow roots by default (Salesforce Lightning and ServiceNow Next Experience use them); XPath does not, so do not use XPath.
+- **Shadow DOM** — Playwright locators pierce open shadow roots by default (Salesforce Lightning and ServiceNow Next Experience use them); XPath does not, so use role, label, text, or CSS locators.
 - **No stable locator at all** — record the element under "Fragile locators" in the Vendor section of `tests/TESTING.md`, use the least-bad locator, and mark it in the page object:
 
 ```python
@@ -65,7 +65,7 @@ Without a browser tool, use Playwright codegen against the app (`references/brow
 ## 4. Login: SSO and MFA
 
 - **Exploration:** the user logs in by hand, as in `references/browser-exploration.md` §2.
-- **Test runs:** ask the vendor admin for a dedicated integration user, either exempt from MFA or with a TOTP secret. Store the secret as `TEST_ROLE_<NAME>_TOTP_SECRET` (`.env` / CI secrets; add a commented placeholder to `.env.example`). Never bypass MFA or disable it for a real user.
+- **Test runs:** ask the vendor admin for a dedicated integration user, either exempt from MFA or with a TOTP secret. Store the secret as `TEST_ROLE_<NAME>_TOTP_SECRET` (`.env` / CI secrets; add a commented placeholder to `.env.example`). Keep MFA on for every real user; the integration user is the only account set up for automation.
 - **Fallback:** saved storage state the user refreshes by hand. Record its expiry in `TESTING.md`; nightly runs fail when it lapses.
 
 Vendor apps often have no API login that yields a browser session. In vendor mode, storage state may be created by logging in through the UI once per role:

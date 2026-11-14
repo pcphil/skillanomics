@@ -26,7 +26,7 @@ An in-app scaffold adds to a repo the team already owns. Adding new tests must n
    - An existing task runner (Makefile, justfile, tox, nox) — new test targets.
    - `.gitignore` — `tests/.env`, `tests/.auth/`, `tests/reports/`.
 
-   CI workflows come later, on demand (`references/ci-github-actions.md`). Never create or change `.python-version` or `requires-python`. Shared files are merged, never overwritten: add the smallest change in the format the repo already uses.
+   CI workflows come later, on demand (`references/ci-github-actions.md`). Leave `.python-version` and `requires-python` exactly as the team set them. Shared files are merged, never overwritten: add the smallest change in the format the repo already uses.
 2. **Footprint preview.** Before writing anything, show the user every root file the scaffold will touch, marked **new** or **added to**, with the diff of each addition. Write after one approval.
 3. **One pytest config.** If any of `pytest.ini`, `pyproject.toml [tool.pytest.ini_options]`, `setup.cfg [tool:pytest]`, or `tox.ini [pytest]` exists, extend that file. Create `[tool.pytest.ini_options]` only when none exists — `pytest.ini` silently wins over `pyproject.toml`, so two configs means one is ignored.
 4. **Follow the repo's tooling.** Dependency tool (uv, poetry, pip-tools, plain pip), lint and type-check config, and the Python version stay as the team set them; add a test group in their format (e.g. `[tool.poetry.group.test.dependencies]`). New test code follows the team's linter; add no lint config of its own.
@@ -34,7 +34,7 @@ An in-app scaffold adds to a repo the team already owns. Adding new tests must n
 6. **Avoid fixture collisions.** In Assess, list existing fixtures (`pytest --fixtures`). Known clash: pytest-django provides `settings` — this skill's settings fixture is `env_settings`. Rename any other fixture that collides.
 7. **Leave existing tests in place.** Do not move or rename them. Add `api/`, `e2e/`, `support/` beside them. If a root `tests/conftest.py` exists, append only the `pytest_plugins` line. When existing unit tests live flat in `tests/`, new unit tests follow that location; record it in `TESTING.md`.
 8. **Env files stay inside `tests/`** (section 4) so no framework loader (Next.js, Vite, Django, docker compose) picks them up.
-9. **Existing test folders and frameworks.** When tests live in `test/`, `__tests__/`, `e2e/`, or similar, add new layers inside that folder and record it in `TESTING.md`; read `tests/` in this skill as that folder. When a layer already uses another framework (Cypress for e2e, Jest for unit), stop and ask the user before adding a second one beside it.
+9. **Existing test folders and frameworks.** When tests live in `test/`, `__tests__/`, `e2e/`, or similar, add new layers inside that folder and record it in `TESTING.md`; read `tests/` in this skill as that folder. When a layer already uses another framework (Cypress for e2e, Jest for unit), stop and ask the user before adding a second one beside it. If the user keeps the existing framework, write that layer's tests in it, in its existing style.
 
 ## 3. Layout
 
@@ -129,6 +129,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -149,6 +150,8 @@ class Settings(BaseSettings):
     database_url: str = ""
     roles: str = "member"  # comma-separated role names
     default_role: str = "member"  # role for tests with no role marker; production smoke uses "smoke"
+    login_path: str = "/auth/login"  # the app's API login endpoint, from Assess
+    production_hosts: str = ""  # comma-separated hostnames that are production (guard below)
 
     def require(self, field: str) -> str:
         value = getattr(self, field)
@@ -185,7 +188,16 @@ def load_env_files() -> str:
 @lru_cache
 def get_settings() -> Settings:
     load_env_files()
-    return Settings()
+    settings = Settings()
+    _guard_production(settings)
+    return settings
+
+def _guard_production(s: Settings) -> None:
+    """A production host labelled as another env fails before any test runs."""
+    prod_hosts = {h.strip() for h in s.production_hosts.split(",") if h.strip()}
+    for url in (s.base_url, s.api_url):
+        if url and urlparse(url).hostname in prod_hosts and s.target_env != "production":
+            raise RuntimeError(f"{url} is a production host but TEST_TARGET_ENV={s.target_env}")
 ```
 
 ```python
@@ -233,6 +245,8 @@ TEST_API_URL=
 TEST_DATABASE_URL=
 TEST_ROLES=member,admin
 TEST_DEFAULT_ROLE=member
+TEST_LOGIN_PATH=/auth/login
+TEST_PRODUCTION_HOSTS=app.example.com
 TEST_ROLE_MEMBER_USERNAME=member@example.test
 TEST_ROLE_MEMBER_PASSWORD=change-me
 TEST_ROLE_ADMIN_USERNAME=admin@example.test
@@ -270,6 +284,8 @@ const env = z
     TEST_API_URL: blank(z.string().url().optional()),
     TEST_ROLES: blank(z.string().default("member")),
     TEST_DEFAULT_ROLE: blank(z.string().default("member")),
+    TEST_LOGIN_PATH: blank(z.string().default("/auth/login")),
+    TEST_PRODUCTION_HOSTS: blank(z.string().default("")),
   })
   .parse({ ...process.env, TEST_TARGET_ENV: targetEnv });
 
@@ -290,7 +306,16 @@ export const settings = {
   baseUrl: env.TEST_BASE_URL,
   apiBase: (env.TEST_API_URL as string | undefined) || env.TEST_BASE_URL,
   defaultRole: env.TEST_DEFAULT_ROLE as string,
+  loginPath: env.TEST_LOGIN_PATH as string,
 };
+
+// Production guard: a production host labelled as another env fails before any test runs
+const prodHosts = (env.TEST_PRODUCTION_HOSTS as string).split(",").map((h) => h.trim()).filter(Boolean);
+for (const url of [settings.baseUrl, settings.apiBase]) {
+  if (prodHosts.includes(new URL(url).hostname) && settings.targetEnv !== "production") {
+    throw new Error(`${url} is a production host but TEST_TARGET_ENV=${settings.targetEnv}`);
+  }
+}
 ```
 
 TS production guard:
@@ -418,7 +443,7 @@ uv run pytest tests/e2e --browser firefox --browser webkit   # nightly / pre-rel
 uv run pytest tests/e2e --device "Pixel 7"                     # nightly / pre-release
 ```
 
-When the repo has a task runner (Makefile, justfile, `package.json` scripts, tox, nox), add these as targets there (`test-unit`, `test-api`, `test-e2e`, `test-smoke`) as part of the footprint preview. Otherwise record them in `TESTING.md`. Never create a new task-runner file in-app.
+When the repo has a task runner (Makefile, justfile, `package.json` scripts, tox, nox), add these as targets there (`test-unit`, `test-api`, `test-e2e`, `test-smoke`) as part of the footprint preview. Otherwise record them in `TESTING.md` — in an app repo, task runners stay the team's choice.
 
 pytest-playwright runs Chromium by default. Its base URL comes from the `base_url` override in `tests/e2e/conftest.py`:
 

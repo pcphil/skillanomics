@@ -185,7 +185,7 @@ Pin image tags to the version production runs.
 - **Entity data** (users, orders) — per test, via factories and fixtures.
 - **Staging** — never depend on data created by hand; create and clean up through the API.
 - **Vendor sandbox** — shared with other teams: prefix every created record with the run ID and sweep leftovers nightly (`references/vendor-apps.md` §9).
-- **Production** — read-only smoke only: read pre-existing, known-stable records (IDs supplied through env vars). Create nothing.
+- **Production** — read-only smoke only: read pre-existing, known-stable records (IDs supplied through env vars); every production test is a read.
 
 ## 5. Environments
 

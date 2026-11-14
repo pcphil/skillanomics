@@ -53,7 +53,7 @@ Then decide the route:
 
 Load `references/strategy.md`.
 
-- **Full pipeline:** produce the full strategy — system-under-test, risk areas, layer split with rationale, tool choices per stack, environment rules, and a test case table (ID, title, layer, priority, preconditions, steps, expected result). Then **stop for sign-off**: present the strategy and wait for the user to approve or amend it before writing any code.
+- **Full pipeline:** produce the full strategy — system-under-test, risk areas, layer split with rationale, tool choices per stack, environment rules, and a test case table (ID, title, layer, priority, preconditions, steps, expected result). Then **stop for sign-off**: present the strategy and wait for the user to approve or amend it before writing any code. On an amendment, change only the affected rows and sections, re-present just those changes, and ask for sign-off again.
 - **Targeted:** produce a short plan — the risks this task covers, the layer(s), and the case list — then continue straight to the build phase.
 - **Targeted with no framework:** produce the full strategy and stop for sign-off, as in full pipeline.
 
@@ -65,7 +65,7 @@ Only when Assess found no framework. Load `references/architecture.md`.
 
 1. Decide the location: `tests/` inside the app repo by default; a standalone test repo when Assess found several services, in vendor mode, or when the user asks. A standalone repo defaults to Python — confirm with the user.
 2. Create the layout, runner config, typed settings (`TEST_`-prefixed env files inside `tests/`, role registry, fail-fast on missing values), API client layer, role-based auth fixtures, page-object fixtures (if UI is in scope), marker/tag scheme, and reporting for the stack. In an existing repo, follow the coexistence rules in `references/architecture.md` §2: keep runner configs, auth state, and reports inside `tests/`; show the **footprint preview** (every root file touched, marked new or added-to, with diffs) and wait for one approval before writing; keep existing tests and tooling in place; scope stricter pytest options to the new tests.
-3. List every dependency to add and ask the user before installing anything. In the same question, offer type checking for the test support layer (default no; `references/architecture.md` §5).
+3. List every dependency to add and ask the user before installing anything. In the same question, offer type checking for the test support layer (default no; `references/architecture.md` §5). If the user declines some dependencies, scaffold only the layers that work without them and list what each declined package would unlock.
 4. Ship one working example test per layer in scope — an API health/stable-GET check with schema validation and a UI home-page check — and take them through Verify. The scaffold is done only when both pass, including the prove-fail check.
 
 ## Build phases
@@ -133,7 +133,7 @@ These hold in every phase:
 2. Map every test to a risk, a layer, and a priority from the strategy.
 3. Push each check down to the lowest layer that can prove it — keep e2e to the critical journeys.
 4. Give each test its own data and clean it up; tests pass in any order and in parallel.
-5. Wait on conditions and web-first assertions; fixed sleeps are never the fix.
+5. Wait on conditions and web-first assertions — when tempted by a sleep, write the assertion that describes the state being waited for.
 6. Finish every task that writes or changes tests with Verify, including the prove-fail check.
 7. When asking the user to decide, number each question, list lettered options with the recommended one first and marked **(Recommended)**, and give a one-line reason grounded in Assess findings. Word each question so "yes" accepts the recommendation. Ask every independent question in one round; hold back only questions whose answer depends on one still open. Use the platform's multiple-choice prompt when one is available.
    Give no default for production runs, production writes during browser exploration, vendor load-test approval (Environment Rules 3, 4, 6), or the code-location question: state the facts and the risk, and say why no recommendation is given.

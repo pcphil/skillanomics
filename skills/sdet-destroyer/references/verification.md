@@ -36,11 +36,11 @@ End the phase with a short report:
 ```
 [SDET: Verify]
 
-Added / changed: 12 tests (U-01..U-06, I-10..I-13, E-01, E-02)
-Run: 12 passed, 0 failed (2 consecutive runs)
+Added / changed: 13 tests (U-01..U-06, I-10..I-14, E-01, E-02)
+Run: 12 passed, 1 xfailed (I-14, user agreed; bug link pending), 0 failed (2 consecutive runs)
 Prove-fail: U-01, I-10, I-11, E-01 — each failed on the broken assertion, green after restore
 Not verified: E-02 — needs staging credentials (TEST_ROLE_MEMBER_USERNAME missing for staging)
-Findings: I-12 — PATCH /orders/{id} returns 500 for qty=0; expected 422. Evidence: response body below.
+Findings: I-14 — PATCH /orders/{id} returns 500 for qty=0; expected 422. Evidence: response body below.
 Run commands:
   uv run pytest tests/unit tests/api -n auto
   uv run pytest tests/e2e -m smoke -n auto

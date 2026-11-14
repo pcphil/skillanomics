@@ -140,7 +140,7 @@ def storage_state_for(playwright, tmp_path_factory, env_settings):
         if role not in states:
             creds = env_settings.role(role)
             ctx = playwright.request.new_context(base_url=env_settings.api_base)
-            resp = ctx.post("/auth/login", data={"username": creds.username, "password": creds.password})
+            resp = ctx.post(env_settings.login_path, data={"username": creds.username, "password": creds.password})
             assert resp.ok, f"login failed for role {role}: {resp.status}"
             path = tmp_path_factory.mktemp("auth") / f"{role}.json"
             ctx.storage_state(path=path)
@@ -179,7 +179,7 @@ import { credentials, roleNames, settings } from "../settings";
 
 for (const role of roleNames) {
   setup(`authenticate as ${role} @smoke`, async ({ request }) => {
-    const res = await request.post(`${settings.apiBase}/auth/login`, { data: credentials(role) });
+    const res = await request.post(`${settings.apiBase}${settings.loginPath}`, { data: credentials(role) });
     if (!res.ok()) throw new Error(`login failed for role ${role}: ${res.status()}`);
     await request.storageState({ path: `tests/.auth/${role}.json` }); // standalone: .auth/
   });
